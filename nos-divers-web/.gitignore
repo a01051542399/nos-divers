@@ -24,3 +24,10 @@ dist-ssr
 *.sw?
 
 .vercel
+
+# Sensitive files
+android/keystore.properties
+android/app/upload-keystore.jks
+android/app/google-services.json
+*.jks
+*.keystore

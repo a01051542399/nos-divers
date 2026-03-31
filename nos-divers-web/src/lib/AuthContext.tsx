@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 import type { User, Session } from "@supabase/supabase-js";
 import { supabase, isSupabaseConfigured } from "./supabase";
 import * as db from "./supabase-store";
+import { isNative } from "./platform";
+import { App as CapApp } from "@capacitor/app";
 
 interface AuthState {
   user: User | null;
@@ -30,6 +32,14 @@ const AuthContext = createContext<AuthState>({
 
 export function useAuth() {
   return useContext(AuthContext);
+}
+
+/** Get the correct redirect URL for OAuth callbacks */
+function getRedirectUrl() {
+  if (isNative()) {
+    return "com.nosdivers.app://callback";
+  }
+  return window.location.origin;
 }
 
 /** Sync auth user metadata → profiles table (only fills in empty fields) */
@@ -88,7 +98,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    return () => subscription.unsubscribe();
+    // Handle deep links for native OAuth callback
+    let appUrlListener: { remove: () => void } | undefined;
+    if (isNative()) {
+      CapApp.addListener("appUrlOpen", async ({ url }) => {
+        if (url.includes("callback") || url.includes("access_token") || url.includes("code=")) {
+          // Extract tokens from URL fragment and set session
+          const hashParams = new URLSearchParams(url.split("#")[1] || "");
+          const accessToken = hashParams.get("access_token");
+          const refreshToken = hashParams.get("refresh_token");
+          if (accessToken && refreshToken) {
+            await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+          }
+        }
+      }).then(l => { appUrlListener = l; });
+    }
+
+    return () => {
+      subscription.unsubscribe();
+      appUrlListener?.remove();
+    };
   }, []);
 
   const signInWithEmail = useCallback(async (email: string, password: string) => {
@@ -116,7 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signInWithOAuth({
       provider: "kakao",
       options: {
-        redirectTo: window.location.origin,
+        redirectTo: getRedirectUrl(),
         scopes: "profile_nickname profile_image",
         queryParams: {
           scope: "profile_nickname profile_image",
@@ -130,7 +159,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: window.location.origin,
+        redirectTo: getRedirectUrl(),
       },
     });
   }, []);
@@ -138,7 +167,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const resetPassword = useCallback(async (email: string) => {
     if (!isSupabaseConfigured) return { error: "Supabase가 설정되지 않았습니다" };
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin,
+      redirectTo: getRedirectUrl(),
     });
     if (error) return { error: error.message };
     return { error: null };

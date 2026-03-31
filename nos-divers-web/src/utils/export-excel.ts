@@ -1,5 +1,7 @@
 import XLSX from "xlsx-js-style";
 import type { Tour, Settlement } from "../types";
+import { isNative } from "../lib/platform";
+import { saveFile } from "./file-save";
 
 // Color definitions
 const BLUE_BG = { fgColor: { rgb: "1565C0" } };   // O결제 (participant + payer)
@@ -28,7 +30,7 @@ const THIN_BORDER = {
   right: { style: "thin", color: { rgb: "CCCCCC" } },
 };
 
-export function exportSettlementExcel(tour: Tour, settlements: Settlement[]) {
+export async function exportSettlementExcel(tour: Tour, settlements: Settlement[]) {
   const fmt = (n: number) => Math.round(n);
   const wb = XLSX.utils.book_new();
 
@@ -277,5 +279,10 @@ export function exportSettlementExcel(tour: Tour, settlements: Settlement[]) {
 
   // Download
   const fileName = `NoS_Divers_정산서_${tour.name}_${new Date().toISOString().slice(0, 10)}.xlsx`;
-  XLSX.writeFile(wb, fileName);
+  if (isNative()) {
+    const base64 = XLSX.write(wb, { type: "base64", bookType: "xlsx" });
+    await saveFile(fileName, base64, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+  } else {
+    XLSX.writeFile(wb, fileName);
+  }
 }

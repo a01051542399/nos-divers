@@ -1,5 +1,7 @@
 import type { Waiver, Tour } from "../types";
 import { WAIVER_TITLE, WAIVER_INTRO, WAIVER_SECTIONS, WAIVER_CLOSING, HEALTH_CHECKLIST } from "../waiver-template";
+import { isNative } from "../lib/platform";
+import { saveFile } from "./file-save";
 
 function parseInfo(w: Waiver) {
   return typeof w.personalInfo === "string" ? JSON.parse(w.personalInfo) : w.personalInfo;
@@ -101,34 +103,34 @@ const CSS = `
   .sig-date { font-size: 11px; color: #666; margin-top: 8px; }
 `;
 
-/** 개인 면책동의서 PDF (1건) */
-export function exportWaiverPDF(waiver: Waiver, tour?: Tour) {
-  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>면책동의서 - ${waiver.signerName}</title><style>${CSS}</style></head><body>${buildWaiverHTML(waiver, tour)}</body></html>`;
-
-  const printWindow = window.open("", "_blank");
-  if (printWindow) {
-    printWindow.document.write(html);
-    printWindow.document.close();
-    setTimeout(() => printWindow.print(), 500);
+/** Helper: print or save HTML */
+async function outputHTML(html: string, filename: string) {
+  if (isNative()) {
+    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+    await saveFile(filename, blob, "text/html");
   } else {
-    alert("팝업이 차단되었습니다. 브라우저 설정에서 팝업을 허용해주세요.");
+    const printWindow = window.open("", "_blank");
+    if (printWindow) {
+      printWindow.document.write(html);
+      printWindow.document.close();
+      setTimeout(() => printWindow.print(), 500);
+    } else {
+      alert("팝업이 차단되었습니다. 브라우저 설정에서 팝업을 허용해주세요.");
+    }
   }
 }
 
-/** 전체 면책동의서 PDF (투어 전체) */
-export function exportAllWaiversPDF(waivers: Waiver[], tour?: Tour) {
-  if (waivers.length === 0) return;
+/** 개인 면책동의서 PDF (1건) */
+export async function exportWaiverPDF(waiver: Waiver, tour?: Tour) {
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>면책동의서 - ${waiver.signerName}</title><style>${CSS}</style></head><body>${buildWaiverHTML(waiver, tour)}</body></html>`;
+  await outputHTML(html, `면책동의서_${waiver.signerName}.html`);
+}
 
+/** 전체 면책동의서 PDF (투어 전체) */
+export async function exportAllWaiversPDF(waivers: Waiver[], tour?: Tour) {
+  if (waivers.length === 0) return;
   const pages = waivers.map((w) => buildWaiverHTML(w, tour)).join("");
   const title = tour ? `면책동의서_${tour.name}` : "면책동의서_전체";
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title><style>${CSS}</style></head><body>${pages}</body></html>`;
-
-  const printWindow = window.open("", "_blank");
-  if (printWindow) {
-    printWindow.document.write(html);
-    printWindow.document.close();
-    setTimeout(() => printWindow.print(), 500);
-  } else {
-    alert("팝업이 차단되었습니다. 브라우저 설정에서 팝업을 허용해주세요.");
-  }
+  await outputHTML(html, `${title}.html`);
 }

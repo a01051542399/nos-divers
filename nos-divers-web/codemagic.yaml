@@ -1,0 +1,50 @@
+workflows:
+  ios-release:
+    name: iOS Release
+    max_build_duration: 30
+    instance_type: mac_mini_m2
+    environment:
+      node: 20
+      xcode: latest
+      groups:
+        - ios_credentials
+      vars:
+        BUNDLE_ID: "com.nosdivers.app"
+        APP_STORE_CONNECT_APP_ID: "6761408084"
+    scripts:
+      - name: Install dependencies
+        script: |
+          cd nos-divers-web
+          npm ci
+      - name: Build web
+        script: |
+          cd nos-divers-web
+          npm run build
+      - name: Sync Capacitor
+        script: |
+          cd nos-divers-web
+          npx cap sync ios
+      - name: Install CocoaPods
+        script: |
+          cd nos-divers-web/ios/App
+          pod install || true
+      - name: Set up code signing
+        script: |
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE
+          keychain add-certificates
+          xcode-project use-profiles
+      - name: Build IPA
+        script: |
+          cd nos-divers-web/ios/App
+          xcode-project build-ipa \
+            --workspace "App.xcworkspace" \
+            --scheme "App" \
+            --config "Release" \
+            --archive-flags="-destination 'generic/platform=iOS'"
+    artifacts:
+      - nos-divers-web/ios/App/build/ios/ipa/*.ipa
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true

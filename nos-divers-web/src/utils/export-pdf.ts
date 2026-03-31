@@ -1,6 +1,8 @@
 import type { Tour, Settlement } from "../types";
+import { isNative } from "../lib/platform";
+import { saveFile } from "./file-save";
 
-export function exportSettlementPDF(tour: Tour, settlements: Settlement[]) {
+export async function exportSettlementPDF(tour: Tour, settlements: Settlement[]) {
   const totalExpense = tour.expenses.reduce((s, e) => s + e.amount * (e.exchangeRate || 1), 0);
   const fmt = (n: number) => new Intl.NumberFormat("ko-KR").format(Math.round(n));
   const pCount = tour.participants.length;
@@ -219,12 +221,18 @@ ${settlements.length === 0 ? "<p>정산할 내역이 없습니다</p>" :
 </div>
 </body></html>`;
 
-  const printWindow = window.open("", "_blank");
-  if (printWindow) {
-    printWindow.document.write(html);
-    printWindow.document.close();
-    setTimeout(() => printWindow.print(), 500);
+  if (isNative()) {
+    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+    const fileName = `NoS_정산서_${tour.name}_${new Date().toISOString().slice(0, 10)}.html`;
+    await saveFile(fileName, blob, "text/html");
   } else {
-    alert("팝업이 차단되었습니다. 브라우저 설정에서 팝업을 허용해주세요.");
+    const printWindow = window.open("", "_blank");
+    if (printWindow) {
+      printWindow.document.write(html);
+      printWindow.document.close();
+      setTimeout(() => printWindow.print(), 500);
+    } else {
+      alert("팝업이 차단되었습니다. 브라우저 설정에서 팝업을 허용해주세요.");
+    }
   }
 }

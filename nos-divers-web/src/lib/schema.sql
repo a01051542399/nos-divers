@@ -330,7 +330,29 @@ $$ LANGUAGE sql SECURITY DEFINER;
 
 
 -- ============================================================
--- 5. STORAGE BUCKET
+-- 5. PUSH NOTIFICATIONS (device_tokens)
+-- ============================================================
+
+-- 1-9. device_tokens (푸시 알림용 디바이스 토큰)
+CREATE TABLE IF NOT EXISTS device_tokens (
+  id SERIAL PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  token TEXT NOT NULL,
+  platform TEXT DEFAULT 'android',  -- 'android' | 'ios' | 'web'
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(user_id, token)
+);
+
+ALTER TABLE device_tokens ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "device_tokens_select" ON device_tokens FOR SELECT USING (user_id = auth.uid());
+CREATE POLICY "device_tokens_insert" ON device_tokens FOR INSERT WITH CHECK (user_id = auth.uid());
+CREATE POLICY "device_tokens_update" ON device_tokens FOR UPDATE USING (user_id = auth.uid());
+CREATE POLICY "device_tokens_delete" ON device_tokens FOR DELETE USING (user_id = auth.uid());
+
+
+-- ============================================================
+-- 6. STORAGE BUCKET
 -- ============================================================
 
 -- images 버킷 (비공개)

@@ -180,6 +180,10 @@ body {
   position: relative;
   -webkit-font-smoothing: antialiased;
   background-color: var(--background);
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
 /* Scrollbar */
