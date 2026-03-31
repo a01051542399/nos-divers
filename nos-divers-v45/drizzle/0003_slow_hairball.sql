@@ -1,0 +1,1 @@
+ALTER TABLE `waivers` MODIFY COLUMN `signatureImage` mediumtext NOT NULL;

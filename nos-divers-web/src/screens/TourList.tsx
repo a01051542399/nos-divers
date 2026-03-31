@@ -1,76 +1,103 @@
-import { useState } from "react";
-import * as store from "../store";
-import { useToast } from "../toast";
+import { useState, useEffect } from "react";
 import type { Route } from "../App";
+import { useToast } from "../toast";
+import * as db from "../lib/supabase-store";
+import { formatCurrency } from "../store";
+import { useTours } from "../hooks/useSupabase";
+import { getTheme } from "../theme";
 
 interface Props {
   navigate: (r: Route) => void;
 }
 
 export function TourListScreen({ navigate }: Props) {
-  const [tours, setTours] = useState(() => store.listTours());
+  const { tours, loading, refresh } = useTours();
   const [showCreate, setShowCreate] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
+  const [deletePinValue, setDeletePinValue] = useState("");
   const { toast, confirm } = useToast();
+  const theme = getTheme();
+  const isDark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+
+  // 앱 시작 시 7일 지난 임시보관 투어 자동 삭제
+  useEffect(() => { db.cleanupTrash(); }, []);
+
+  // Hidden tours (now from app settings)
+  const [hiddenTours, setHiddenTours] = useState<number[]>([]);
+  useEffect(() => {
+    db.getAppSettings().then((s) => setHiddenTours(s.hiddenTourIds || []));
+  }, []);
+  const visibleTours = tours.filter((t) => !hiddenTours.includes(t.id));
+
+  const [profile, setProfile] = useState({ name: "", email: "", grade: "멤버" as string });
+  useEffect(() => { db.getProfile().then(setProfile); }, []);
+
   const [form, setForm] = useState({
     name: "",
-    date: "",
+    accessCode: "",
+    dateStart: "",
+    dateEnd: "",
     location: "",
-    accessCode: "0000",
-    createdBy: "",
   });
 
-  const handleCreate = () => {
+  // Format 6-digit date string to YY.MM.DD display
+  const formatDateInput = (v: string) => v.replace(/[^0-9]/g, "").slice(0, 6);
+  const displayDate = (v: string) => {
+    if (v.length <= 2) return v;
+    if (v.length <= 4) return v.slice(0, 2) + "." + v.slice(2);
+    return v.slice(0, 2) + "." + v.slice(2, 4) + "." + v.slice(4);
+  };
+  const isValidDate = (v: string) => {
+    if (v.length !== 6) return false;
+    const m = parseInt(v.slice(2, 4), 10);
+    const d = parseInt(v.slice(4, 6), 10);
+    return m >= 1 && m <= 12 && d >= 1 && d <= 31;
+  };
+
+  const handleCreate = async () => {
+    if (!profile.name.trim()) {
+      toast("설정에서 이름을 먼저 등록해주세요", "warning");
+      return;
+    }
     if (!form.name.trim()) {
       toast("투어 이름을 입력해주세요", "warning");
       return;
     }
-    store.createTour(form);
-    setTours(store.listTours());
-    setShowCreate(false);
-    setForm({ name: "", date: "", location: "", accessCode: "0000", createdBy: "" });
-    toast("투어가 생성되었습니다", "success");
-  };
-
-  const handleShare = async (e: React.MouseEvent, inviteCode: string) => {
-    e.stopPropagation();
-    const text = `NoS Divers 투어에 참가하세요!\n초대 코드: ${inviteCode}`;
-    if (navigator.share) {
-      try { await navigator.share({ text }); } catch {}
-    } else {
-      await navigator.clipboard.writeText(text);
-      toast("초대 코드가 복사되었습니다!", "success");
+    if (!isValidDate(form.dateStart) || !isValidDate(form.dateEnd)) {
+      toast("날짜를 정확히 입력해주세요 (6자리: 연월일)", "warning");
+      return;
+    }
+    if (!/^\d{4}$/.test(form.accessCode)) {
+      toast("수정 비밀번호는 4자리 숫자여야 합니다", "warning");
+      return;
+    }
+    try {
+      const dateStr = displayDate(form.dateStart) + " ~ " + displayDate(form.dateEnd);
+      await db.createTour({ ...form, date: dateStr, createdBy: profile.name.trim() });
+      await refresh();
+      setShowCreate(false);
+      setForm({ name: "", accessCode: "", dateStart: "", dateEnd: "", location: "" });
+      toast("투어가 생성되었습니다", "success");
+    } catch (e: any) {
+      toast(e.message || "투어 생성에 실패했습니다", "error");
     }
   };
 
-  const handleDelete = async (e: React.MouseEvent, tourId: number) => {
-    e.stopPropagation();
-    if (await confirm("투어를 삭제하시겠습니까?")) {
-      store.deleteTour(tourId);
-      setTours(store.listTours());
-      toast("투어가 삭제되었습니다", "info");
-    }
-  };
-
-  const fields = [
-    { key: "name", label: "투어 이름 *", placeholder: "예: 동해 소수정예" },
-    { key: "date", label: "날짜", placeholder: "예: 2026-04-01" },
-    { key: "location", label: "장소", placeholder: "예: 사라웃리조트" },
-    { key: "accessCode", label: "입장 코드 (4자리)", placeholder: "0000" },
-    { key: "createdBy", label: "주최자", placeholder: "이름" },
-  ];
 
   return (
     <>
       {/* Logo */}
       <div className="logo-header">
-        <img src="/logo-dolphin.png" alt="NoS Divers" style={{ width: 100, height: 100 }} />
-        <div className="logo-title">NoS DIVERS</div>
-        <div style={{ fontSize: 11, color: "var(--muted)", letterSpacing: 1 }}>SINCE 2019 DIVING TEAM</div>
-      </div>
-
-      {/* Greeting */}
-      <div className="greeting">
-        안녕하세요, <strong>다이버</strong>님
+        <img
+          src="/logo-full-official.png"
+          alt="NoS Divers"
+          className="logo-img"
+          style={{
+            filter: isDark
+              ? "drop-shadow(0 0 1px rgba(255,255,255,0.9)) drop-shadow(0 0 2px rgba(255,255,255,0.5)) drop-shadow(0 0 4px rgba(255,255,255,0.3))"
+              : "drop-shadow(0 0 1px rgba(0,0,0,0.15)) drop-shadow(0 0 3px rgba(0,0,0,0.1))",
+          }}
+        />
       </div>
 
       {/* Header with actions */}
@@ -86,13 +113,27 @@ export function TourListScreen({ navigate }: Props) {
 
       {/* Tour List */}
       <div className="p-16" style={{ paddingTop: 0 }}>
-        {tours.length === 0 ? (
+        {loading ? (
           <div className="empty-state">
-            <div className="icon">🤿</div>
-            <div>아직 투어가 없습니다</div>
+            <div style={{ color: "var(--muted)", fontSize: 14 }}>로딩 중...</div>
+          </div>
+        ) : visibleTours.length === 0 ? (
+          <div className="empty-state" style={{
+            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+            minHeight: "calc(100vh - 300px)",
+          }}>
+            <svg width="56" height="40" viewBox="0 0 56 40" fill="none" style={{ marginBottom: 12, opacity: 0.45 }}>
+              <path d="M6 10c4-3 7-3 11 0s7 3 11 0 7-3 11 0 7 3 11 0" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+              <path d="M6 20c4-3 7-3 11 0s7 3 11 0 7-3 11 0 7 3 11 0" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+              <path d="M6 30c4-3 7-3 11 0s7 3 11 0 7-3 11 0 7 3 11 0" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+            </svg>
+            <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 6 }}>투어가 없습니다</div>
+            <div style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.6, textAlign: "center" }}>
+              새 다이빙 투어를 만들거나<br />입장코드로 투어에 참여하세요
+            </div>
           </div>
         ) : (
-          tours.map((tour) => (
+          visibleTours.map((tour) => (
             <div
               key={tour.id}
               className="tour-list-card"
@@ -102,18 +143,47 @@ export function TourListScreen({ navigate }: Props) {
                 <div>
                   <div className="card-title">{tour.name}</div>
                   <div className="card-meta">
-                    {tour.date && <span>📅 {tour.date}</span>}
-                    {tour.location && <span>📍 {tour.location}</span>}
+                    {tour.date && <span>{tour.date}</span>}
+                    {tour.location && <span>{tour.location}</span>}
                   </div>
                 </div>
-                <div className="card-actions">
-                  <button className="share-btn" onClick={(e) => handleShare(e, tour.inviteCode)}>▶</button>
-                  <button className="delete-btn" onClick={(e) => handleDelete(e, tour.id)}>🗑</button>
+                <div className="card-actions" style={{ display: "flex", gap: 8 }}>
+                  <button
+                    style={{ background: "none", border: "none", color: "var(--muted)", fontSize: 12, cursor: "pointer", padding: 4 }}
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      if (await confirm("이 투어를 목록에서 숨기시겠습니까?")) {
+                        const updated = [...hiddenTours, tour.id];
+                        setHiddenTours(updated);
+                        db.setHiddenTourIds(updated);
+                        toast("목록에서 숨겼습니다", "info");
+                      }
+                    }}
+                  >
+                    숨기기
+                  </button>
+                  <button
+                    style={{ background: "none", border: "none", color: "var(--error)", fontSize: 12, cursor: "pointer", padding: 4 }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteTarget(tour.id);
+                      setDeletePinValue("");
+                    }}
+                  >
+                    삭제
+                  </button>
                 </div>
               </div>
               <div className="card-footer">
-                <span>👤 주최: {tour.createdBy || "-"}</span>
-                <span>👥 {tour.participants.length}명</span>
+                <span>주최: {tour.createdBy || "-"}</span>
+                <span style={{ display: "flex", gap: 12 }}>
+                  <span>{tour.participants.length}명</span>
+                  {tour.expenses.length > 0 && (
+                    <span style={{ color: "var(--primary)", fontWeight: 600 }}>
+                      {formatCurrency(tour.expenses.reduce((s, e) => s + e.amount, 0))}
+                    </span>
+                  )}
+                </span>
               </div>
             </div>
           ))
@@ -126,17 +196,93 @@ export function TourListScreen({ navigate }: Props) {
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-title">새 투어 만들기</div>
 
-            {fields.map((field) => (
-              <div key={field.key} className="input-group">
-                <div className="input-label">{field.label}</div>
+            {/* Name (required) */}
+            <div className="input-group">
+              <div className="input-label">투어 이름 *</div>
+              <input
+                className="input"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="예: 동해 수중정화활동"
+              />
+            </div>
+
+            {/* CreatedBy (auto from profile) */}
+            <div className="input-group">
+              <div className="input-label">주최자</div>
+              <div style={{
+                padding: "12px 14px", borderRadius: 12,
+                background: "var(--surface-light)", color: "var(--foreground)",
+                fontSize: 15, fontWeight: 600,
+              }}>
+                {profile.name || <span style={{ color: "var(--error)", fontWeight: 400, fontSize: 13 }}>설정에서 이름을 먼저 등록해주세요</span>}
+              </div>
+            </div>
+
+            {/* Access Code (required, exactly 4 digits) */}
+            <div className="input-group">
+              <div className="input-label">수정 비밀번호 * (4자리 숫자)</div>
+              <input
+                className="input"
+                value={form.accessCode}
+                onChange={(e) => {
+                  const v = e.target.value.replace(/[^0-9]/g, "").slice(0, 4);
+                  setForm({ ...form, accessCode: v });
+                }}
+                placeholder="0000"
+                inputMode="numeric"
+                maxLength={4}
+                style={{
+                  textAlign: "center",
+                  fontSize: 28,
+                  letterSpacing: 12,
+                  fontWeight: 700,
+                }}
+              />
+              <div style={{ fontSize: 11, color: "var(--foreground)", marginTop: 4, opacity: 0.7 }}>
+                *내용 수정시 사용 관리자에게만 공개하십시오
+              </div>
+            </div>
+
+            {/* Date (required, 6-digit start ~ end) */}
+            <div className="input-group">
+              <div className="input-label">투어 기간 * (연월일 6자리)</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <input
                   className="input"
-                  value={(form as any)[field.key]}
-                  onChange={(e) => setForm({ ...form, [field.key]: e.target.value })}
-                  placeholder={field.placeholder}
+                  value={displayDate(form.dateStart)}
+                  onChange={(e) => setForm({ ...form, dateStart: formatDateInput(e.target.value) })}
+                  placeholder="260401"
+                  inputMode="numeric"
+                  maxLength={8}
+                  style={{ flex: 1, textAlign: "center", fontSize: 16, fontWeight: 600, letterSpacing: 1 }}
+                />
+                <span style={{ color: "var(--muted)", fontWeight: 700, fontSize: 16 }}>~</span>
+                <input
+                  className="input"
+                  value={displayDate(form.dateEnd)}
+                  onChange={(e) => setForm({ ...form, dateEnd: formatDateInput(e.target.value) })}
+                  placeholder="260403"
+                  inputMode="numeric"
+                  maxLength={8}
+                  style={{ flex: 1, textAlign: "center", fontSize: 16, fontWeight: 600, letterSpacing: 1 }}
                 />
               </div>
-            ))}
+              <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4 }}>
+                예: 260401 ~ 260403 (26년 4월 1일 ~ 3일)
+              </div>
+            </div>
+
+            {/* Location (optional) */}
+            <div className="input-group">
+              <div className="input-label">장소</div>
+              <input
+                className="input"
+                value={form.location}
+                onChange={(e) => setForm({ ...form, location: e.target.value })}
+                placeholder="예: 사라웃리조트"
+              />
+            </div>
 
             <div className="flex-row gap-12 mt-8">
               <button className="btn btn-secondary" onClick={() => setShowCreate(false)}>
@@ -149,6 +295,83 @@ export function TourListScreen({ navigate }: Props) {
           </div>
         </div>
       )}
+
+      {/* Delete Tour Modal */}
+      {deleteTarget !== null && (() => {
+        const targetTour = tours.find((t) => t.id === deleteTarget);
+        if (!targetTour) return null;
+        return (
+          <div className="modal-overlay" onClick={() => setDeleteTarget(null)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-title" style={{ color: "var(--error)" }}>투어 삭제</div>
+
+              <div style={{
+                background: "var(--warning-alpha)", borderRadius: 10, padding: 14,
+                fontSize: 13, color: "var(--warning)", lineHeight: 1.7, marginBottom: 16,
+              }}>
+                <div style={{ fontWeight: 700, marginBottom: 4 }}>"{targetTour.name}"</div>
+                삭제된 투어는 <strong>임시보관함</strong>에 7일간 보관 후 자동 삭제됩니다.
+                <br />임시보관 기간 내에는 설정 &gt; 임시보관함에서 복원할 수 있습니다.
+              </div>
+
+              <div className="input-group">
+                <div className="input-label">수정 비밀번호 입력 (4자리)</div>
+                <input
+                  className="input"
+                  type="password"
+                  value={deletePinValue}
+                  onChange={(e) => setDeletePinValue(e.target.value.replace(/[^0-9]/g, "").slice(0, 4))}
+                  placeholder="0000"
+                  inputMode="numeric"
+                  maxLength={4}
+                  autoFocus
+                  style={{ textAlign: "center", fontSize: 24, letterSpacing: 12, fontWeight: 700 }}
+                  onKeyDown={async (e) => {
+                    if (e.key === "Enter" && deletePinValue.length === 4) {
+                      const valid = await db.verifyTourAccessCode(deleteTarget, deletePinValue);
+                      if (valid) {
+                        await db.softDeleteTour(deleteTarget);
+                        await refresh();
+                        setDeleteTarget(null);
+                        toast("투어가 임시보관함으로 이동되었습니다 (7일 후 자동 삭제)", "info");
+                      } else {
+                        toast("비밀번호가 일치하지 않습니다", "error");
+                        setDeletePinValue("");
+                      }
+                    }
+                  }}
+                />
+              </div>
+
+              <div className="flex-row gap-12 mt-8">
+                <button className="btn btn-secondary" onClick={() => setDeleteTarget(null)}>
+                  취소
+                </button>
+                <button
+                  className="btn btn-danger"
+                  style={{ opacity: deletePinValue.length === 4 ? 1 : 0.5 }}
+                  disabled={deletePinValue.length !== 4}
+                  onClick={async () => {
+                    const valid = await db.verifyTourAccessCode(deleteTarget, deletePinValue);
+                    if (valid) {
+                      await db.softDeleteTour(deleteTarget);
+                      await refresh();
+                      setDeleteTarget(null);
+                      toast("투어가 임시보관함으로 이동되었습니다 (7일 후 자동 삭제)", "info");
+                    } else {
+                      toast("비밀번호가 일치하지 않습니다", "error");
+                      setDeletePinValue("");
+                    }
+                  }}
+                >
+                  삭제
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
     </>
   );
 }

@@ -6,3 +6,25 @@ dist/
 .DS_Store
 Thumbs.db
 .claude/
+
+# Build artifacts
+*.aab
+*.ipa
+*.zip
+*.apk
+diving_settlement_app*
+
+# Large media files
+*.mp4
+*.mov
+
+# Temporary/generated
+.playwright-mcp/
+docx_temp/
+frames/
+frames2/
+
+# Screenshots (store assets - keep in separate backup)
+*.png
+!nos-divers-web/public/*.png
+!nos-divers-v45/assets/**/*.png

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, createContext, useContext } from "react";
+import { useState, useCallback, createContext, useContext } from "react";
 
 type ToastType = "info" | "success" | "error" | "warning";
 
@@ -91,7 +91,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               fontSize: 14,
               fontWeight: 500,
               color: "var(--foreground)",
-              boxShadow: "0 4px 20px var(--shadow)",
+              boxShadow: "none",
               animation: "toast-in 0.25s ease-out",
               pointerEvents: "auto",
             }}

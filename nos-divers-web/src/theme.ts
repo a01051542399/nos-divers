@@ -5,7 +5,7 @@ const THEME_KEY = "nos_divers_theme";
 export function getTheme(): ThemeMode {
   const saved = localStorage.getItem(THEME_KEY);
   if (saved === "dark" || saved === "light" || saved === "system") return saved;
-  return "dark";
+  return "system";
 }
 
 export function setTheme(mode: ThemeMode) {
