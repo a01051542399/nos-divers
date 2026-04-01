@@ -6,6 +6,15 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   server: {
     androidScheme: 'https',
+    allowNavigation: [
+      '*.supabase.co',
+      '*.kakao.com',
+      'kauth.kakao.com',
+      'accounts.kakao.com',
+      'accounts.google.com',
+      '*.google.com',
+      '*.googleusercontent.com',
+    ],
   },
   plugins: {
     SplashScreen: {

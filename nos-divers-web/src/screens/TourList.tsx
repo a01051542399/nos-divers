@@ -123,7 +123,7 @@ export function TourListScreen({ navigate }: Props) {
         ) : visibleTours.length === 0 ? (
           <div className="empty-state" style={{
             display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-            minHeight: "calc(100vh - 300px)",
+            flex: 1,
           }}>
             <svg width="56" height="40" viewBox="0 0 56 40" fill="none" style={{ marginBottom: 12, opacity: 0.45 }}>
               <path d="M6 10c4-3 7-3 11 0s7 3 11 0 7-3 11 0 7 3 11 0" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
