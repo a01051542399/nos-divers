@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import {
   Text,
   View,
@@ -19,7 +19,7 @@ import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { trpc } from "@/lib/trpc";
+import * as db from "@/lib/supabase-store";
 import * as Store from "@/lib/store";
 import type { Tour, Settlement, Expense } from "@/lib/types";
 
@@ -44,11 +44,22 @@ function showAlert(title: string, message: string) {
 
 // ===== Waiver Tab Content =====
 function WaiverTabContent({ tourId, tourName, colors, router }: { tourId: number; tourName: string; colors: any; router: any }) {
-  const waiversQuery = trpc.waiver.listByTour.useQuery(
-    { tourId },
-    { enabled: !!tourId }
-  );
-  const waivers = waiversQuery.data || [];
+  const [waivers, setWaivers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadWaivers = useCallback(async () => {
+    try {
+      setWaivers(await db.listWaiversByTour(tourId));
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  }, [tourId]);
+
+  useEffect(() => {
+    loadWaivers();
+  }, [loadWaivers]);
 
   return (
     <View style={{ flex: 1 }}>
@@ -62,7 +73,7 @@ function WaiverTabContent({ tourId, tourName, colors, router }: { tourId: number
         <Text style={styles.addButtonText}>면책동의서 서명하기</Text>
       </TouchableOpacity>
 
-      {waiversQuery.isLoading ? (
+      {loading ? (
         <View style={{ paddingVertical: 40, alignItems: "center" }}>
           <ActivityIndicator size="small" color={colors.primary} />
         </View>
@@ -125,35 +136,26 @@ export default function TourDetailScreen() {
   const [splitType, setSplitType] = useState<"equal" | "custom">("equal");
   const [customAmounts, setCustomAmounts] = useState<Record<string, string>>({});
 
-  const utils = trpc.useUtils();
-  const tourQuery = trpc.tour.getById.useQuery({ id: tourId }, { enabled: !!tourId });
-  const addParticipantMutation = trpc.participant.add.useMutation({
-    onSuccess: () => {
-      utils.tour.getById.invalidate({ id: tourId });
-      setNewParticipantName("");
-      setShowParticipantModal(false);
-    },
-  });
-  const removeParticipantMutation = trpc.participant.remove.useMutation({
-    onSuccess: () => {
-      utils.tour.getById.invalidate({ id: tourId });
-      tourQuery.refetch();
-    },
-  });
-  const addExpenseMutation = trpc.expense.add.useMutation({
-    onSuccess: () => {
-      utils.tour.getById.invalidate({ id: tourId });
-      setShowExpenseModal(false);
-    },
-  });
-  const removeExpenseMutation = trpc.expense.remove.useMutation({
-    onSuccess: () => {
-      utils.tour.getById.invalidate({ id: tourId });
-      tourQuery.refetch();
-    },
-  });
+  // Data state
+  const [tour, setTour] = useState<Tour | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [addingParticipant, setAddingParticipant] = useState(false);
+  const [addingExpense, setAddingExpense] = useState(false);
 
-  const tour = tourQuery.data as Tour | null | undefined;
+  const loadTour = useCallback(async () => {
+    try {
+      const data = await db.getTourById(tourId);
+      setTour(data ?? null);
+    } catch (e) {
+      console.error("Failed to load tour:", e);
+    } finally {
+      setLoading(false);
+    }
+  }, [tourId]);
+
+  useEffect(() => {
+    loadTour();
+  }, [loadTour]);
 
   // 정산 계산 - tour 데이터 변경 시 자동 재계산
   const settlements = useMemo(() => {
@@ -165,17 +167,36 @@ export default function TourDetailScreen() {
     return tour?.expenses.reduce((sum, e) => sum + e.amount, 0) || 0;
   }, [tour]);
 
-  const handleAddParticipant = () => {
+  const handleAddParticipant = async () => {
     if (!newParticipantName.trim()) return;
-    addParticipantMutation.mutate({ tourId, name: newParticipantName.trim() });
+    setAddingParticipant(true);
+    try {
+      await db.addParticipant(tourId, newParticipantName.trim());
+      setNewParticipantName("");
+      setShowParticipantModal(false);
+      await loadTour();
+    } catch (e) {
+      console.error("Failed to add participant:", e);
+      showAlert("오류", "참여자 추가에 실패했습니다.");
+    } finally {
+      setAddingParticipant(false);
+    }
   };
 
   // 참여자 삭제 - PIN 없이 자유롭게
   const handleRemoveParticipant = (participantId: number) => {
     const participantName = tour?.participants.find(p => p.id === participantId)?.name || "";
+    const doRemove = async () => {
+      try {
+        await db.removeParticipant(tourId, participantId);
+        await loadTour();
+      } catch (e) {
+        console.error("Failed to remove participant:", e);
+      }
+    };
     if (Platform.OS === "web") {
       if (window.confirm(`"${participantName}" 참여자를 삭제하시겠습니까?`)) {
-        removeParticipantMutation.mutate({ id: participantId });
+        doRemove();
       }
     } else {
       Alert.alert(
@@ -183,7 +204,7 @@ export default function TourDetailScreen() {
         `"${participantName}" 참여자를 삭제하시겠습니까?`,
         [
           { text: "취소", style: "cancel" },
-          { text: "삭제", style: "destructive", onPress: () => removeParticipantMutation.mutate({ id: participantId }) },
+          { text: "삭제", style: "destructive", onPress: doRemove },
         ]
       );
     }
@@ -203,58 +224,77 @@ export default function TourDetailScreen() {
     setShowExpenseModal(true);
   };
 
-  const handleAddExpense = () => {
+  const handleAddExpense = async () => {
     if (!expenseName.trim() || !expenseAmount || !expensePaidBy) return;
     const amount = parseInt(expenseAmount.replace(/[^0-9]/g, ""), 10);
     if (isNaN(amount) || amount <= 0) return;
 
-    if (splitType === "custom") {
-      const amounts: Record<string, number> = {};
-      let total = 0;
-      expenseSplitAmong.forEach((pid) => {
-        const val = parseInt(customAmounts[String(pid)] || "0", 10);
-        amounts[String(pid)] = val;
-        total += val;
-      });
-      if (total !== amount) {
-        showAlert("금액 불일치", `개별 금액 합계(${Store.formatCurrency(total)})가 총 금액(${Store.formatCurrency(amount)})과 일치하지 않습니다.`);
-        return;
+    setAddingExpense(true);
+    try {
+      if (splitType === "custom") {
+        const amounts: Record<string, number> = {};
+        let total = 0;
+        expenseSplitAmong.forEach((pid) => {
+          const val = parseInt(customAmounts[String(pid)] || "0", 10);
+          amounts[String(pid)] = val;
+          total += val;
+        });
+        if (total !== amount) {
+          showAlert("금액 불일치", `개별 금액 합계(${Store.formatCurrency(total)})가 총 금액(${Store.formatCurrency(amount)})과 일치하지 않습니다.`);
+          setAddingExpense(false);
+          return;
+        }
+        await db.addExpense({
+          tourId,
+          name: expenseName.trim(),
+          amount,
+          paidBy: expensePaidBy,
+          splitAmong: expenseSplitAmong,
+          splitType: "custom",
+          splitAmounts: amounts,
+        });
+      } else {
+        await db.addExpense({
+          tourId,
+          name: expenseName.trim(),
+          amount,
+          paidBy: expensePaidBy,
+          splitAmong: expenseSplitAmong,
+          splitType: "equal",
+        });
       }
-      addExpenseMutation.mutate({
-        tourId,
-        name: expenseName.trim(),
-        amount,
-        paidBy: expensePaidBy,
-        splitAmong: expenseSplitAmong,
-        splitType: "custom",
-        splitAmounts: amounts,
-      });
-    } else {
-      addExpenseMutation.mutate({
-        tourId,
-        name: expenseName.trim(),
-        amount,
-        paidBy: expensePaidBy,
-        splitAmong: expenseSplitAmong,
-        splitType: "equal",
-      });
+      setShowExpenseModal(false);
+      await loadTour();
+    } catch (e) {
+      console.error("Failed to add expense:", e);
+      showAlert("오류", "비용 추가에 실패했습니다.");
+    } finally {
+      setAddingExpense(false);
     }
   };
 
   // 비용 삭제 - PIN 없이 자유롭게
   const handleRemoveExpense = (expenseId: number) => {
-    const expenseName = tour?.expenses.find(e => e.id === expenseId)?.name || "";
+    const expName = tour?.expenses.find(e => e.id === expenseId)?.name || "";
+    const doRemove = async () => {
+      try {
+        await db.removeExpense(tourId, expenseId);
+        await loadTour();
+      } catch (e) {
+        console.error("Failed to remove expense:", e);
+      }
+    };
     if (Platform.OS === "web") {
-      if (window.confirm(`"${expenseName}" 비용을 삭제하시겠습니까?`)) {
-        removeExpenseMutation.mutate({ id: expenseId });
+      if (window.confirm(`"${expName}" 비용을 삭제하시겠습니까?`)) {
+        doRemove();
       }
     } else {
       Alert.alert(
         "비용 삭제",
-        `"${expenseName}" 비용을 삭제하시겠습니까?`,
+        `"${expName}" 비용을 삭제하시겠습니까?`,
         [
           { text: "취소", style: "cancel" },
-          { text: "삭제", style: "destructive", onPress: () => removeExpenseMutation.mutate({ id: expenseId }) },
+          { text: "삭제", style: "destructive", onPress: doRemove },
         ]
       );
     }
@@ -285,7 +325,7 @@ export default function TourDetailScreen() {
     }
   };
 
-  if (tourQuery.isLoading) {
+  if (loading) {
     return (
       <ScreenContainer edges={["top", "left", "right"]}>
         <Stack.Screen options={{ headerShown: false }} />
@@ -658,11 +698,11 @@ export default function TourDetailScreen() {
               <TouchableOpacity
                 style={[styles.createButton, { backgroundColor: newParticipantName.trim() ? colors.primary : colors.muted }]}
                 onPress={handleAddParticipant}
-                disabled={!newParticipantName.trim() || addParticipantMutation.isPending}
+                disabled={!newParticipantName.trim() || addingParticipant}
                 activeOpacity={0.8}
               >
                 <Text style={styles.createButtonText}>
-                  {addParticipantMutation.isPending ? "추가 중..." : "추가"}
+                  {addingParticipant ? "추가 중..." : "추가"}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -842,11 +882,11 @@ export default function TourDetailScreen() {
                   },
                 ]}
                 onPress={handleAddExpense}
-                disabled={!expenseName.trim() || !expenseAmount || !expensePaidBy || expenseSplitAmong.length === 0 || addExpenseMutation.isPending}
+                disabled={!expenseName.trim() || !expenseAmount || !expensePaidBy || expenseSplitAmong.length === 0 || addingExpense}
                 activeOpacity={0.8}
               >
                 <Text style={styles.createButtonText}>
-                  {addExpenseMutation.isPending ? "추가 중..." : "비용 추가"}
+                  {addingExpense ? "추가 중..." : "비용 추가"}
                 </Text>
               </TouchableOpacity>
             </View>

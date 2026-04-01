@@ -1,62 +1,65 @@
-/**
- * 데이터 스토어 - tRPC API를 통한 서버/DB 연동
- * 투어, 면책동의서 데이터를 서버에 저장/관리
- */
-import type { Tour, Participant, Expense, Settlement } from "./types";
+import type { Tour, Settlement } from "./types";
 
-// ===== Settlement Calculation =====
+// ─── Pure utility functions (no side effects) ───────────────────────────────
+
+export interface UserProfile {
+  name: string;
+  email: string;
+  grade: string;
+  phone?: string;
+  birthDate?: string;
+  divingLevel?: string;
+  emergencyContact?: string;
+}
 
 export function calculateSettlement(tour: Tour): Settlement[] {
   const { participants, expenses } = tour;
   if (participants.length === 0 || expenses.length === 0) return [];
 
-  // 각 참여자별 순 잔액 계산 (양수 = 받을 돈, 음수 = 보낼 돈)
   const balances: Record<number, number> = {};
-  participants.forEach((p) => {
+  for (const p of participants) {
     balances[p.id] = 0;
-  });
+  }
 
-  expenses.forEach((expense) => {
-    if (!expense.paidBy || expense.splitAmong.length === 0) return;
+  for (const expense of expenses) {
+    const rate = expense.exchangeRate || 1;
+    const amountKRW = expense.amount * rate;
 
-    // 결제자는 전체 금액을 냈으므로 +
     if (balances[expense.paidBy] !== undefined) {
-      balances[expense.paidBy] += expense.amount;
+      balances[expense.paidBy] += amountKRW;
     }
 
     if (expense.splitType === "custom" && expense.splitAmounts) {
-      // 커스텀 금액: 각 참여자별 지정 금액만큼 -
-      expense.splitAmong.forEach((pid) => {
-        const customAmount = expense.splitAmounts?.[String(pid)] ?? 0;
-        if (balances[pid] !== undefined) {
-          balances[pid] -= customAmount;
+      for (const [pid, amount] of Object.entries(expense.splitAmounts)) {
+        const id = Number(pid);
+        if (balances[id] !== undefined) {
+          balances[id] -= amount * rate;
         }
-      });
+      }
     } else {
-      // 균등 분배: 전체 금액을 참여자 수로 나눔
-      const perPerson = expense.amount / expense.splitAmong.length;
-      expense.splitAmong.forEach((pid) => {
+      const splitCount = expense.splitAmong.length;
+      if (splitCount === 0) continue;
+      const perPerson = amountKRW / splitCount;
+      for (const pid of expense.splitAmong) {
         if (balances[pid] !== undefined) {
           balances[pid] -= perPerson;
         }
-      });
+      }
     }
-  });
+  }
 
-  // 정산 최적화: 채권자/채무자 분리 후 매칭
-  const creditors: { id: number; amount: number }[] = [];
-  const debtors: { id: number; amount: number }[] = [];
+  const creditors: { id: number; name: string; amount: number }[] = [];
+  const debtors: { id: number; name: string; amount: number }[] = [];
 
-  Object.entries(balances).forEach(([idStr, balance]) => {
-    const id = Number(idStr);
+  for (const p of participants) {
+    const balance = balances[p.id] || 0;
     if (balance > 0.01) {
-      creditors.push({ id, amount: balance });
+      creditors.push({ id: p.id, name: p.name, amount: balance });
     } else if (balance < -0.01) {
-      debtors.push({ id, amount: -balance });
+      debtors.push({ id: p.id, name: p.name, amount: -balance });
     }
-  });
+  }
 
-  // 금액 큰 순서로 정렬
   creditors.sort((a, b) => b.amount - a.amount);
   debtors.sort((a, b) => b.amount - a.amount);
 
@@ -67,13 +70,11 @@ export function calculateSettlement(tour: Tour): Settlement[] {
   while (ci < creditors.length && di < debtors.length) {
     const amount = Math.min(creditors[ci].amount, debtors[di].amount);
     if (amount > 0.01) {
-      const fromP = participants.find((p) => p.id === debtors[di].id);
-      const toP = participants.find((p) => p.id === creditors[ci].id);
       settlements.push({
         from: debtors[di].id,
-        fromName: fromP?.name || "",
+        fromName: debtors[di].name,
         to: creditors[ci].id,
-        toName: toP?.name || "",
+        toName: creditors[ci].name,
         amount: Math.round(amount),
       });
     }
@@ -86,42 +87,35 @@ export function calculateSettlement(tour: Tour): Settlement[] {
   return settlements;
 }
 
-// ===== Formatting Helpers =====
+export function formatKRW(amount: number): string {
+  return new Intl.NumberFormat("ko-KR").format(Math.round(amount)) + "원";
+}
 
 export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("ko-KR", {
-    style: "currency",
-    currency: "KRW",
-    maximumFractionDigits: 0,
-  }).format(amount);
+  return new Intl.NumberFormat("ko-KR", { style: "currency", currency: "KRW" }).format(Math.round(amount));
 }
 
-export function formatDate(dateStr: string | Date | null | undefined): string {
+export function formatDate(dateStr: string | Date | undefined): string {
   if (!dateStr) return "";
-  const str = typeof dateStr === "string" ? dateStr : dateStr.toISOString();
-  const date = new Date(str);
-  if (isNaN(date.getTime())) {
-    return str;
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return String(dateStr);
+    return d.toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" });
+  } catch {
+    return String(dateStr);
   }
-  return new Intl.DateTimeFormat("ko-KR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  }).format(date);
 }
 
-export function formatDateTime(dateStr: string | Date | null | undefined): string {
+export function formatDateTime(dateStr: string | Date | undefined): string {
   if (!dateStr) return "";
-  const str = typeof dateStr === "string" ? dateStr : dateStr.toISOString();
-  const date = new Date(str);
-  if (isNaN(date.getTime())) {
-    return str;
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return String(dateStr);
+    return d.toLocaleDateString("ko-KR", {
+      year: "numeric", month: "long", day: "numeric",
+      hour: "2-digit", minute: "2-digit",
+    });
+  } catch {
+    return String(dateStr);
   }
-  return new Intl.DateTimeFormat("ko-KR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
 }

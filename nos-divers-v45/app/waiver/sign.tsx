@@ -16,7 +16,7 @@ import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { SignatureModal } from "@/components/signature-modal";
-import { trpc } from "@/lib/trpc";
+import * as db from "@/lib/supabase-store";
 import type { WaiverPersonalInfo } from "@/lib/types";
 import {
   WAIVER_TITLE,
@@ -76,6 +76,7 @@ export default function WaiverSignScreen() {
   const [signatureData, setSignatureData] = useState<string | null>(null);
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   const [step, setStep] = useState(0); // 0: 기본정보, 1: 동의서 내용, 2: 서명
+  const [submitting, setSubmitting] = useState(false);
 
   // 필수 항목 미입력 표시
   const [showErrors, setShowErrors] = useState(false);
@@ -127,27 +128,26 @@ export default function WaiverSignScreen() {
     setStep(2);
   };
 
-  const createWaiverMutation = trpc.waiver.create.useMutation({
-    onSuccess: () => {
-      showAlert("완료", "면책동의서 서명이 완료되었습니다.");
-      router.back();
-    },
-    onError: (error) => {
-      showAlert("오류", "서명 저장 중 오류가 발생했습니다. 다시 시도해주세요.");
-    },
-  });
-
   const handleSubmit = async () => {
     if (!tourId || !signatureData) return;
-
-    createWaiverMutation.mutate({
-      tourId: Number(tourId),
-      signerName: personalInfo.name,
-      personalInfo: JSON.stringify(personalInfo),
-      healthChecklist: JSON.stringify(healthChecklist),
-      healthOther,
-      signatureImage: signatureData,
-    });
+    setSubmitting(true);
+    try {
+      await db.createWaiver({
+        tourId: Number(tourId),
+        signerName: personalInfo.name,
+        personalInfo: JSON.stringify(personalInfo),
+        healthChecklist: JSON.stringify(healthChecklist),
+        healthOther,
+        signatureImage: signatureData,
+      });
+      showAlert("완료", "면책동의서 서명이 완료되었습니다.");
+      router.back();
+    } catch (e) {
+      console.error("Failed to create waiver:", e);
+      showAlert("오류", "서명 저장 중 오류가 발생했습니다. 다시 시도해주세요.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleSignatureSave = (base64: string) => {
@@ -405,12 +405,12 @@ export default function WaiverSignScreen() {
             { backgroundColor: signatureData ? colors.success : colors.muted, flex: 1 },
           ]}
           onPress={handleSubmit}
-          disabled={!signatureData || createWaiverMutation.isPending}
+          disabled={!signatureData || submitting}
           activeOpacity={0.8}
         >
           <IconSymbol name="checkmark.circle.fill" size={18} color="#FFFFFF" />
           <Text style={styles.nextButtonText}>
-            {createWaiverMutation.isPending ? "저장 중..." : "서명 제출"}
+            {submitting ? "저장 중..." : "서명 제출"}
           </Text>
         </TouchableOpacity>
       </View>

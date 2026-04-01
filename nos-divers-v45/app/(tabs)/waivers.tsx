@@ -1,3 +1,4 @@
+import { useState, useEffect, useCallback } from "react";
 import {
   Text,
   View,
@@ -10,18 +11,32 @@ import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { trpc } from "@/lib/trpc";
+import * as db from "@/lib/supabase-store";
 import * as Store from "@/lib/store";
-import type { TourListItem } from "@/lib/types";
+import type { Tour } from "@/lib/types";
 
 export default function WaiversScreen() {
   const colors = useColors();
   const router = useRouter();
 
-  const toursQuery = trpc.tour.list.useQuery();
-  const tours = (toursQuery.data ?? []) as TourListItem[];
+  const [tours, setTours] = useState<Tour[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const renderTourItem = ({ item }: { item: TourListItem }) => (
+  const loadTours = useCallback(async () => {
+    try {
+      setTours(await db.listTours());
+    } catch (e) {
+      console.error("Failed to load tours:", e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadTours();
+  }, [loadTours]);
+
+  const renderTourItem = ({ item }: { item: Tour }) => (
     <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
       <View style={styles.cardContent}>
         <View style={styles.cardInfo}>
@@ -68,7 +83,7 @@ export default function WaiversScreen() {
         <Text style={[styles.headerTitle, { color: colors.foreground }]}>면책동의서</Text>
       </View>
 
-      {toursQuery.isLoading ? (
+      {loading ? (
         <View style={styles.emptyContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>

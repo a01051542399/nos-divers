@@ -9,12 +9,13 @@ import {
   KeyboardAvoidingView,
   ScrollView,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { trpc } from "@/lib/trpc";
+import * as db from "@/lib/supabase-store";
 
 export default function JoinScreen() {
   const { code } = useLocalSearchParams<{ code?: string }>();
@@ -24,68 +25,82 @@ export default function JoinScreen() {
   const [inviteCode, setInviteCode] = useState(code?.toUpperCase() || "");
   const [participantName, setParticipantName] = useState("");
   const [step, setStep] = useState<"code" | "name" | "success">(code ? "code" : "code");
-  const [tourInfo, setTourInfo] = useState<{ id: number; name: string; date: string; location: string; participantCount: number } | null>(null);
+  const [tourInfo, setTourInfo] = useState<{ id: number; name: string; date: string; location: string; createdByName: string } | null>(null);
   const [joinResult, setJoinResult] = useState<{ tourId: number; tourName: string } | null>(null);
-
-  const tourQuery = trpc.tour.getByInviteCode.useQuery(
-    { inviteCode: inviteCode.toUpperCase() },
-    { enabled: false }
-  );
-
-  const joinMutation = trpc.tour.joinByInviteCode.useMutation({
-    onSuccess: (data) => {
-      setJoinResult({ tourId: data.tourId, tourName: data.tourName });
-      setStep("success");
-    },
-    onError: (error) => {
-      if (Platform.OS === "web") {
-        window.alert(error.message || "참여에 실패했습니다.");
-      }
-    },
-  });
+  const [checking, setChecking] = useState(false);
+  const [joining, setJoining] = useState(false);
 
   const handleCheckCode = async () => {
     if (!inviteCode.trim() || inviteCode.trim().length < 4) {
       if (Platform.OS === "web") {
         window.alert("초대 코드를 입력해주세요.");
+      } else {
+        Alert.alert("알림", "초대 코드를 입력해주세요.");
       }
       return;
     }
 
+    setChecking(true);
     try {
-      const result = await tourQuery.refetch();
-      if (result.data) {
+      const result = await db.lookupTourByInvite(inviteCode.toUpperCase());
+      if (result) {
         setTourInfo({
-          id: result.data.id,
-          name: result.data.name,
-          date: result.data.date,
-          location: result.data.location,
-          participantCount: result.data.participants?.length || 0,
+          id: result.id,
+          name: result.name,
+          date: result.date,
+          location: result.location,
+          createdByName: result.createdByName,
         });
         setStep("name");
       } else {
         if (Platform.OS === "web") {
           window.alert("유효하지 않은 초대 코드입니다.\n코드를 다시 확인해주세요.");
+        } else {
+          Alert.alert("오류", "유효하지 않은 초대 코드입니다.\n코드를 다시 확인해주세요.");
         }
       }
     } catch {
       if (Platform.OS === "web") {
         window.alert("코드 확인 중 오류가 발생했습니다.");
+      } else {
+        Alert.alert("오류", "코드 확인 중 오류가 발생했습니다.");
       }
+    } finally {
+      setChecking(false);
     }
   };
 
-  const handleJoin = () => {
+  const handleJoin = async () => {
     if (!participantName.trim()) {
       if (Platform.OS === "web") {
         window.alert("이름을 입력해주세요.");
+      } else {
+        Alert.alert("알림", "이름을 입력해주세요.");
       }
       return;
     }
-    joinMutation.mutate({
-      inviteCode: inviteCode.toUpperCase(),
-      participantName: participantName.trim(),
-    });
+    setJoining(true);
+    try {
+      const result = await db.joinTour(inviteCode.toUpperCase(), participantName.trim());
+      if ("error" in result) {
+        if (Platform.OS === "web") {
+          window.alert(String(result.error) || "참여에 실패했습니다.");
+        } else {
+          Alert.alert("오류", String(result.error) || "참여에 실패했습니다.");
+        }
+      } else {
+        setJoinResult({ tourId: result.tourId, tourName: result.tourName });
+        setStep("success");
+      }
+    } catch (e) {
+      if (Platform.OS === "web") {
+        window.alert("참여 중 오류가 발생했습니다.");
+      } else {
+        Alert.alert("오류", "참여 중 오류가 발생했습니다.");
+      }
+    } finally {
+      setJoining(false);
+    }
   };
 
   const handleGoToTour = () => {
@@ -152,10 +167,10 @@ export default function JoinScreen() {
                   backgroundColor: inviteCode.trim().length >= 4 ? colors.primary : colors.muted,
                 }]}
                 onPress={handleCheckCode}
-                disabled={inviteCode.trim().length < 4 || tourQuery.isFetching}
+                disabled={inviteCode.trim().length < 4 || checking}
                 activeOpacity={0.8}
               >
-                {tourQuery.isFetching ? (
+                {checking ? (
                   <ActivityIndicator color="#FFFFFF" />
                 ) : (
                   <Text style={styles.primaryButtonText}>코드 확인</Text>
@@ -184,9 +199,6 @@ export default function JoinScreen() {
                     </View>
                   ) : null}
                 </View>
-                <Text style={styles.tourInfoParticipants}>
-                  현재 {tourInfo.participantCount}명 참여 중
-                </Text>
               </View>
 
               <View style={styles.inputContainer}>
@@ -212,10 +224,10 @@ export default function JoinScreen() {
                   backgroundColor: participantName.trim() ? colors.primary : colors.muted,
                 }]}
                 onPress={handleJoin}
-                disabled={!participantName.trim() || joinMutation.isPending}
+                disabled={!participantName.trim() || joining}
                 activeOpacity={0.8}
               >
-                {joinMutation.isPending ? (
+                {joining ? (
                   <ActivityIndicator color="#FFFFFF" />
                 ) : (
                   <Text style={styles.primaryButtonText}>참여하기</Text>

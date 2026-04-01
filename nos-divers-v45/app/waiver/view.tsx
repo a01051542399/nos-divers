@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Text,
   View,
@@ -16,51 +16,54 @@ import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { trpc } from "@/lib/trpc";
+import * as db from "@/lib/supabase-store";
 import * as Store from "@/lib/store";
 import { HEALTH_CHECKLIST } from "@/lib/waiver-template";
-
-interface WaiverItem {
-  id: number;
-  tourId: number;
-  signerName: string;
-  personalInfo: string;
-  healthChecklist: string;
-  healthOther: string | null;
-  signatureImage: string;
-  signedAt: string | Date;
-}
+import type { Waiver } from "@/lib/types";
 
 export default function WaiverViewScreen() {
   const { tourId, tourName } = useLocalSearchParams<{ tourId: string; tourName: string }>();
   const colors = useColors();
   const router = useRouter();
-  const [selectedWaiver, setSelectedWaiver] = useState<WaiverItem | null>(null);
+  const [selectedWaiver, setSelectedWaiver] = useState<Waiver | null>(null);
 
+  const [waivers, setWaivers] = useState<Waiver[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const utils = trpc.useUtils();
-  const waiversQuery = trpc.waiver.listByTour.useQuery(
-    { tourId: Number(tourId) },
-    { enabled: !!tourId }
-  );
-  const waivers = (waiversQuery.data ?? []) as WaiverItem[];
+  const loadWaivers = useCallback(async () => {
+    if (!tourId) return;
+    try {
+      setWaivers(await db.listWaiversByTour(Number(tourId)));
+    } catch (e) {
+      console.error("Failed to load waivers:", e);
+    } finally {
+      setLoading(false);
+    }
+  }, [tourId]);
 
-  const deleteWaiverMutation = trpc.waiver.delete.useMutation({
-    onSuccess: () => {
-      setSelectedWaiver(null);
-      utils.waiver.listByTour.invalidate({ tourId: Number(tourId) });
-    },
-  });
+  useEffect(() => {
+    loadWaivers();
+  }, [loadWaivers]);
 
-  const handleDelete = (waiverId: number) => {
+  const handleDelete = async (waiverId: number) => {
+    const doDelete = async () => {
+      try {
+        await db.deleteWaiver(waiverId);
+        setSelectedWaiver(null);
+        await loadWaivers();
+      } catch (e) {
+        console.error("Failed to delete waiver:", e);
+      }
+    };
+
     if (Platform.OS === "web") {
       if (window.confirm("이 서명을 삭제하시겠습니까?")) {
-        deleteWaiverMutation.mutate({ id: waiverId });
+        await doDelete();
       }
     } else {
       Alert.alert("서명 삭제", "이 서명을 삭제하시겠습니까?", [
         { text: "취소", style: "cancel" },
-        { text: "삭제", style: "destructive", onPress: () => deleteWaiverMutation.mutate({ id: waiverId }) },
+        { text: "삭제", style: "destructive", onPress: doDelete },
       ]);
     }
   };
@@ -75,7 +78,7 @@ export default function WaiverViewScreen() {
     try { return JSON.parse(raw); } catch { return []; }
   };
 
-  const renderWaiverItem = ({ item }: { item: WaiverItem }) => (
+  const renderWaiverItem = ({ item }: { item: Waiver }) => (
     <TouchableOpacity
       style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
       onPress={() => setSelectedWaiver(item)}
@@ -126,7 +129,7 @@ export default function WaiverViewScreen() {
         </Text>
       </View>
 
-      {waiversQuery.isLoading ? (
+      {loading ? (
         <View style={styles.emptyContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -153,8 +156,8 @@ export default function WaiverViewScreen() {
             </View>
 
             {selectedWaiver && (() => {
-              const info = parsePersonalInfo(selectedWaiver.personalInfo);
-              const health = parseHealthChecklist(selectedWaiver.healthChecklist);
+              const info = parsePersonalInfo(typeof selectedWaiver.personalInfo === 'string' ? selectedWaiver.personalInfo : JSON.stringify(selectedWaiver.personalInfo));
+              const health = parseHealthChecklist(typeof selectedWaiver.healthChecklist === 'string' ? selectedWaiver.healthChecklist : JSON.stringify(selectedWaiver.healthChecklist));
               return (
                 <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 500 }}>
                   {/* 기본 정보 */}

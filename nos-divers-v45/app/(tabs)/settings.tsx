@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Text,
   View,
@@ -11,15 +11,30 @@ import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import * as Store from "@/lib/store";
+import * as db from "@/lib/supabase-store";
+import { useAuth } from "@/lib/auth-provider";
 import { Image } from "expo-image";
 
 export default function SettingsScreen() {
   const colors = useColors();
-  const [clearing, setClearing] = useState(false);
+  const { user, signOut } = useAuth();
+  const [profile, setProfile] = useState<Store.UserProfile | null>(null);
+
+  useEffect(() => {
+    db.getProfile().then(setProfile).catch(console.error);
+  }, []);
 
   const handleClearData = () => {
     if (Platform.OS === "web") {
       window.alert("데이터는 서버에 저장되어 있습니다.\n개별 투어나 동의서는 각 화면에서 삭제할 수 있습니다.");
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch (e) {
+      console.error("Sign out failed:", e);
     }
   };
 
@@ -47,6 +62,33 @@ export default function SettingsScreen() {
             다이빙 투어 비용 정산과 면책동의서 서명을 간편하게 관리하세요.
           </Text>
         </View>
+
+        {/* 계정 정보 */}
+        {user && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.muted }]}>계정</Text>
+            <View style={[styles.menuCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <View style={[styles.menuItem, { borderBottomWidth: 0.5, borderBottomColor: colors.border }]}>
+                <Text style={[styles.menuItemTitle, { color: colors.foreground }]}>이메일</Text>
+                <Text style={[styles.menuItemValue, { color: colors.muted }]}>{user.email}</Text>
+              </View>
+              {profile?.name ? (
+                <View style={[styles.menuItem, { borderBottomWidth: 0.5, borderBottomColor: colors.border }]}>
+                  <Text style={[styles.menuItemTitle, { color: colors.foreground }]}>이름</Text>
+                  <Text style={[styles.menuItemValue, { color: colors.muted }]}>{profile.name}</Text>
+                </View>
+              ) : null}
+              <TouchableOpacity style={styles.menuItem} onPress={handleSignOut} activeOpacity={0.7}>
+                <View style={styles.menuItemLeft}>
+                  <View style={[styles.menuIcon, { backgroundColor: colors.error + "15" }]}>
+                    <IconSymbol name="rectangle.portrait.and.arrow.right" size={18} color={colors.error} />
+                  </View>
+                  <Text style={[styles.menuItemTitle, { color: colors.error }]}>로그아웃</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
 
         {/* 데이터 관리 */}
         <View style={styles.section}>

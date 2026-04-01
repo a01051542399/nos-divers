@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Text,
   View,
@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   ScrollView,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
@@ -18,9 +19,9 @@ import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { PinModal } from "@/components/pin-modal";
-import { trpc } from "@/lib/trpc";
+import * as db from "@/lib/supabase-store";
 import * as Store from "@/lib/store";
-import type { TourListItem } from "@/lib/types";
+import type { Tour } from "@/lib/types";
 
 export default function ToursScreen() {
   const colors = useColors();
@@ -36,34 +37,53 @@ export default function ToursScreen() {
   const [showPinModal, setShowPinModal] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
 
-  const utils = trpc.useUtils();
-  const toursQuery = trpc.tour.list.useQuery();
-  const createMutation = trpc.tour.create.useMutation({
-    onSuccess: () => {
-      utils.tour.list.invalidate();
+  // Data state
+  const [tours, setTours] = useState<Tour[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+
+  const loadTours = useCallback(async () => {
+    try {
+      setTours(await db.listTours());
+    } catch (e) {
+      console.error("Failed to load tours:", e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadTours();
+  }, [loadTours]);
+
+  const handleCreateTour = async () => {
+    if (!tourName.trim() || !accessCode.trim() || accessCode.length !== 4 || !createdBy.trim()) return;
+    setCreating(true);
+    try {
+      await db.createTour({
+        name: tourName.trim(),
+        date: tourDate.trim(),
+        location: tourLocation.trim(),
+        accessCode: accessCode.trim(),
+        createdBy: createdBy.trim(),
+      });
       setTourName("");
       setTourDate("");
       setTourLocation("");
       setAccessCode("");
       setCreatedBy("");
       setShowModal(false);
-    },
-  });
-  const deleteMutation = trpc.tour.delete.useMutation({
-    onSuccess: () => utils.tour.list.invalidate(),
-  });
-
-  const tours = (toursQuery.data ?? []) as TourListItem[];
-
-  const handleCreateTour = () => {
-    if (!tourName.trim() || !accessCode.trim() || accessCode.length !== 4 || !createdBy.trim()) return;
-    createMutation.mutate({
-      name: tourName.trim(),
-      date: tourDate.trim(),
-      location: tourLocation.trim(),
-      accessCode: accessCode.trim(),
-      createdBy: createdBy.trim(),
-    });
+      await loadTours();
+    } catch (e) {
+      console.error("Failed to create tour:", e);
+      if (Platform.OS === "web") {
+        window.alert("투어 생성 중 오류가 발생했습니다.");
+      } else {
+        Alert.alert("오류", "투어 생성 중 오류가 발생했습니다.");
+      }
+    } finally {
+      setCreating(false);
+    }
   };
 
   const handleDeleteTour = (tourId: number) => {
@@ -71,10 +91,15 @@ export default function ToursScreen() {
     setShowPinModal(true);
   };
 
-  const handlePinSuccess = () => {
+  const handlePinSuccess = async () => {
     setShowPinModal(false);
     if (pendingDeleteId !== null) {
-      deleteMutation.mutate({ id: pendingDeleteId });
+      try {
+        await db.deleteTour(pendingDeleteId);
+        await loadTours();
+      } catch (e) {
+        console.error("Failed to delete tour:", e);
+      }
       setPendingDeleteId(null);
     }
   };
@@ -84,7 +109,7 @@ export default function ToursScreen() {
     setPendingDeleteId(null);
   };
 
-  const renderTourCard = ({ item }: { item: TourListItem }) => (
+  const renderTourCard = ({ item }: { item: Tour }) => (
     <TouchableOpacity
       style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
       onPress={() => router.push(`/tour/${item.id}` as any)}
@@ -172,7 +197,7 @@ export default function ToursScreen() {
         </View>
       </View>
 
-      {toursQuery.isLoading ? (
+      {loading ? (
         <View style={styles.emptyContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -289,11 +314,11 @@ export default function ToursScreen() {
                     { backgroundColor: canCreate ? colors.primary : colors.muted },
                   ]}
                   onPress={handleCreateTour}
-                  disabled={!canCreate || createMutation.isPending}
+                  disabled={!canCreate || creating}
                   activeOpacity={0.8}
                 >
                   <Text style={styles.createButtonText}>
-                    {createMutation.isPending ? "생성 중..." : "투어 생성"}
+                    {creating ? "생성 중..." : "투어 생성"}
                   </Text>
                 </TouchableOpacity>
               </ScrollView>

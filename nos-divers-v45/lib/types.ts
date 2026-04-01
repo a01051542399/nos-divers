@@ -1,12 +1,13 @@
 /**
  * 다이빙 투어 정산 & 면책동의서 앱 데이터 타입
- * DB 기반 (id는 number)
+ * v45 기준
  */
 
 export interface Participant {
   id: number;
   tourId: number;
   name: string;
+  addedBy?: string;
   lastModifiedBy?: string;
   createdAt?: string;
 }
@@ -16,10 +17,13 @@ export interface Expense {
   tourId: number;
   name: string;
   amount: number;
-  paidBy: number; // participant id
-  splitAmong: number[]; // participant ids
-  splitType: "equal" | "custom"; // 균등분배 or 커스텀
-  splitAmounts: Record<string, number> | null; // 커스텀일 때 {participantId: amount}
+  currency?: string;        // "KRW", "USD", "PHP" etc. (default: "KRW")
+  exchangeRate?: number;    // 1 외화 = N원 (KRW일 때 1)
+  paidBy: number;
+  splitAmong: number[];
+  splitType: "equal" | "custom";
+  splitAmounts: Record<string, number> | null;
+  receiptImage?: string;  // base64 data URL of receipt photo
   lastModifiedBy?: string;
   createdAt?: string;
 }
@@ -36,6 +40,7 @@ export interface Tour {
   expenses: Expense[];
   createdAt?: string;
   updatedAt?: string;
+  deletedAt?: string;
 }
 
 export interface TourListItem {
@@ -46,8 +51,8 @@ export interface TourListItem {
   inviteCode: string;
   accessCode: string;
   createdBy: string;
-  createdAt: string | Date;
-  updatedAt: string | Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface WaiverPersonalInfo {
@@ -73,9 +78,18 @@ export interface Waiver {
 }
 
 export interface Settlement {
-  from: number; // participant id
+  from: number;
   fromName: string;
-  to: number; // participant id
+  to: number;
   toName: string;
   amount: number;
+}
+
+export interface Comment {
+  id: number;
+  tourId: number;
+  authorName: string;
+  text: string;
+  createdAt: string;
+  edited?: boolean;
 }
