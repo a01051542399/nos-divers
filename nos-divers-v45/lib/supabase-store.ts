@@ -20,7 +20,13 @@ async function uploadImage(
   if (!match) throw new Error("Invalid base64 data URL");
   const mime = match[1];
   const raw = match[2];
-  const bytes = Uint8Array.from(atob(raw), (c) => c.charCodeAt(0));
+  // Cross-platform base64 decode (atob may not exist in older RN)
+  let bytes: Uint8Array;
+  if (typeof globalThis.atob === "function") {
+    bytes = Uint8Array.from(atob(raw), (c) => c.charCodeAt(0));
+  } else {
+    bytes = new Uint8Array(Buffer.from(raw, "base64"));
+  }
 
   const { error } = await supabase.storage
     .from("images")

@@ -146,7 +146,9 @@ export function SignatureModal({
       onSave(`data:image/svg+xml;base64,${base64}`);
     } catch {
       try {
-        const base64 = btoa(svgContent);
+        const base64 = typeof btoa !== "undefined"
+          ? btoa(svgContent)
+          : Buffer.from(svgContent).toString("base64");
         onSave(`data:image/svg+xml;base64,${base64}`);
       } catch {
         // fallback: pass raw SVG

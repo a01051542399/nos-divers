@@ -33,6 +33,10 @@ const MAPPING: IconMapping = {
   "doc.on.doc": "content-copy",
   "checkmark.shield.fill": "verified-user",
   "lock.fill": "lock",
+  "person.fill": "person",
+  "rectangle.portrait.and.arrow.right": "logout",
+  "exclamationmark.triangle.fill": "warning",
+  "square.and.arrow.up": "share",
 };
 
 export function IconSymbol({
