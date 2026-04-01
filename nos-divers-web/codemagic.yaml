@@ -1,50 +1,80 @@
 workflows:
   ios-release:
-    name: iOS Release
-    max_build_duration: 30
+    name: iOS Release (Capacitor)
+    max_build_duration: 60
     instance_type: mac_mini_m2
+    working_directory: nos-divers-web
+    integrations:
+      app_store_connect: Codemagic
     environment:
       node: 20
-      xcode: latest
-      groups:
-        - ios_credentials
+      xcode: 16.2
+      cocoapods: default
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.nosdivers.app
       vars:
         BUNDLE_ID: "com.nosdivers.app"
         APP_STORE_CONNECT_APP_ID: "6761408084"
+        XCODE_PROJECT: "ios/App/App.xcodeproj"
+        XCODE_SCHEME: "App"
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+          source: true
     scripts:
-      - name: Install dependencies
+      - name: Install Node dependencies
         script: |
-          cd nos-divers-web
           npm ci
-      - name: Build web
+
+      - name: Build web assets
         script: |
-          cd nos-divers-web
           npm run build
-      - name: Sync Capacitor
+
+      - name: Sync Capacitor iOS
         script: |
-          cd nos-divers-web
           npx cap sync ios
-      - name: Install CocoaPods
-        script: |
-          cd nos-divers-web/ios/App
-          pod install || true
+
       - name: Set up code signing
         script: |
           keychain initialize
-          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
           keychain add-certificates
-          xcode-project use-profiles
+          xcode-project use-profiles --project "$XCODE_PROJECT"
+
+      - name: Increment build number
+        script: |
+          cd ios/App
+          LATEST_BUILD=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_CONNECT_APP_ID" || echo 0)
+          agvtool new-version -all $(($LATEST_BUILD + 1))
+
       - name: Build IPA
         script: |
-          cd nos-divers-web/ios/App
+          cd ios/App
           xcode-project build-ipa \
-            --workspace "App.xcworkspace" \
-            --scheme "App" \
-            --config "Release" \
-            --archive-flags="-destination 'generic/platform=iOS'"
+            --project "App.xcodeproj" \
+            --scheme "$XCODE_SCHEME" \
+            --config "Release"
+
     artifacts:
       - nos-divers-web/ios/App/build/ios/ipa/*.ipa
+      - nos-divers-web/ios/App/*.xarchive/**
+      - /tmp/xcodebuild_logs/*.log
+
     publishing:
+      email:
+        recipients:
+          - a01051542399@gmail.com
+        notify:
+          success: true
+          failure: true
       app_store_connect:
         auth: integration
         submit_to_testflight: true
+        beta_groups:
+          - Internal Testing
