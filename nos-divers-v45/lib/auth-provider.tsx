@@ -3,12 +3,20 @@ import type { ReactNode } from "react";
 import type { User, Session } from "@supabase/supabase-js";
 import { supabase, isSupabaseConfigured } from "./supabase";
 import * as db from "./supabase-store";
-import * as WebBrowser from "expo-web-browser";
-import { makeRedirectUri } from "expo-auth-session";
 import { Platform } from "react-native";
 
-// Complete any pending auth sessions (needed for OAuth redirect)
-WebBrowser.maybeCompleteAuthSession();
+// Lazy imports to avoid crashes on native
+let WebBrowser: typeof import("expo-web-browser") | null = null;
+let makeRedirectUri: typeof import("expo-auth-session").makeRedirectUri | null = null;
+
+try {
+  WebBrowser = require("expo-web-browser");
+  const authSession = require("expo-auth-session");
+  makeRedirectUri = authSession.makeRedirectUri;
+  WebBrowser?.maybeCompleteAuthSession();
+} catch {
+  // Silently fail if modules not available
+}
 
 interface AuthState {
   user: User | null;
@@ -43,7 +51,10 @@ function getRedirectUrl() {
   if (Platform.OS === "web") {
     return typeof window !== "undefined" ? window.location.origin : "";
   }
-  return makeRedirectUri({ scheme: "com.nosdivers.app" });
+  if (makeRedirectUri) {
+    return makeRedirectUri({ scheme: "com.nosdivers.app" });
+  }
+  return "com.nosdivers.app://callback";
 }
 
 /** Sync auth user metadata → profiles table (only fills in empty fields) */
@@ -133,7 +144,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error || !data.url) return;
 
     if (Platform.OS !== "web") {
-      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
+      const result = await WebBrowser!.openAuthSessionAsync(data.url, redirectUrl);
       if (result.type === "success" && result.url) {
         const url = new URL(result.url);
         const params = new URLSearchParams(url.hash.substring(1));
@@ -161,7 +172,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error || !data.url) return;
 
     if (Platform.OS !== "web") {
-      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
+      const result = await WebBrowser!.openAuthSessionAsync(data.url, redirectUrl);
       if (result.type === "success" && result.url) {
         const url = new URL(result.url);
         const params = new URLSearchParams(url.hash.substring(1));
