@@ -85,34 +85,37 @@ export function TourListScreen({ navigate }: Props) {
 
 
   return (
-    <>
-      {/* Logo */}
-      <div className="logo-header">
-        <img
-          src="/logo-full-official.png"
-          alt="NoS Divers"
-          className="logo-img"
-          style={{
-            filter: isDark
-              ? "drop-shadow(0 0 1px rgba(255,255,255,0.9)) drop-shadow(0 0 2px rgba(255,255,255,0.5)) drop-shadow(0 0 4px rgba(255,255,255,0.3))"
-              : "drop-shadow(0 0 1px rgba(0,0,0,0.15)) drop-shadow(0 0 3px rgba(0,0,0,0.1))",
-          }}
-        />
+    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+      {/* Fixed Header */}
+      <div style={{ flexShrink: 0 }}>
+        {/* Logo */}
+        <div className="logo-header">
+          <img
+            src="/logo-full-official.png"
+            alt="NoS Divers"
+            className="logo-img"
+            style={{
+              filter: isDark
+                ? "drop-shadow(0 0 1px rgba(255,255,255,0.9)) drop-shadow(0 0 2px rgba(255,255,255,0.5)) drop-shadow(0 0 4px rgba(255,255,255,0.3))"
+                : "drop-shadow(0 0 1px rgba(0,0,0,0.15)) drop-shadow(0 0 3px rgba(0,0,0,0.1))",
+            }}
+          />
+        </div>
+
+        {/* Header with actions */}
+        <div className="tour-list-header">
+          <h1>다이빙 투어</h1>
+          <button className="header-btn" onClick={() => navigate({ screen: "join" })}>
+            ▶ 참여
+          </button>
+          <button className="header-btn filled" onClick={() => setShowCreate(true)}>
+            + 새 투어
+          </button>
+        </div>
       </div>
 
-      {/* Header with actions */}
-      <div className="tour-list-header">
-        <h1>다이빙 투어</h1>
-        <button className="header-btn" onClick={() => navigate({ screen: "join" })}>
-          ▶ 참여
-        </button>
-        <button className="header-btn filled" onClick={() => setShowCreate(true)}>
-          + 새 투어
-        </button>
-      </div>
-
-      {/* Tour List */}
-      <div className="p-16" style={{ paddingTop: 0 }}>
+      {/* Scrollable Tour List */}
+      <div className="p-16" style={{ paddingTop: 0, flex: 1, overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
         {loading ? (
           <div className="empty-state">
             <div style={{ color: "var(--muted)", fontSize: 14 }}>로딩 중...</div>
@@ -372,6 +375,6 @@ export function TourListScreen({ navigate }: Props) {
         );
       })()}
 
-    </>
+    </div>
   );
 }

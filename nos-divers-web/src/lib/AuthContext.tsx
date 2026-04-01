@@ -3,8 +3,6 @@ import type { ReactNode } from "react";
 import type { User, Session } from "@supabase/supabase-js";
 import { supabase, isSupabaseConfigured } from "./supabase";
 import * as db from "./supabase-store";
-import { isNative } from "./platform";
-import { App as CapApp } from "@capacitor/app";
 
 interface AuthState {
   user: User | null;
@@ -36,9 +34,6 @@ export function useAuth() {
 
 /** Get the correct redirect URL for OAuth callbacks */
 function getRedirectUrl() {
-  if (isNative()) {
-    return "com.nosdivers.app://callback";
-  }
   return window.location.origin;
 }
 
@@ -98,25 +93,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    // Handle deep links for native OAuth callback
-    let appUrlListener: { remove: () => void } | undefined;
-    if (isNative()) {
-      CapApp.addListener("appUrlOpen", async ({ url }) => {
-        if (url.includes("callback") || url.includes("access_token") || url.includes("code=")) {
-          // Extract tokens from URL fragment and set session
-          const hashParams = new URLSearchParams(url.split("#")[1] || "");
-          const accessToken = hashParams.get("access_token");
-          const refreshToken = hashParams.get("refresh_token");
-          if (accessToken && refreshToken) {
-            await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
-          }
-        }
-      }).then(l => { appUrlListener = l; });
-    }
-
     return () => {
       subscription.unsubscribe();
-      appUrlListener?.remove();
     };
   }, []);
 
