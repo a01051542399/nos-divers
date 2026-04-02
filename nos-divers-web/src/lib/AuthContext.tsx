@@ -3,6 +3,9 @@ import type { ReactNode } from "react";
 import type { User, Session } from "@supabase/supabase-js";
 import { supabase, isSupabaseConfigured } from "./supabase";
 import * as db from "./supabase-store";
+import { isNative } from "./platform";
+import { Browser } from "@capacitor/browser";
+import { App as CapApp } from "@capacitor/app";
 
 interface AuthState {
   user: User | null;
@@ -32,31 +35,54 @@ export function useAuth() {
   return useContext(AuthContext);
 }
 
-/** Get the correct redirect URL for OAuth callbacks */
-function getRedirectUrl() {
-  return window.location.origin;
-}
-
 /** Sync auth user metadata → profiles table (only fills in empty fields) */
 async function syncProfileFromUser(user: User) {
   try {
     const meta = user.user_metadata || {};
     const existing = await db.getProfile();
-
     const name = existing.name || meta.full_name || meta.name || meta.preferred_username || "";
     const email = existing.email || user.email || meta.email || "";
-
-    // Only update if there are new values to fill in
     if (name !== existing.name || email !== existing.email) {
-      await db.setProfile({
-        ...existing,
-        name,
-        email,
-        grade: existing.grade || "멤버",
-      });
+      await db.setProfile({ ...existing, name, email, grade: existing.grade || "멤버" });
     }
   } catch {
     // Profile sync is best-effort
+  }
+}
+
+/** Handle OAuth for both web and native Capacitor */
+async function handleOAuth(provider: "kakao" | "google") {
+  if (!isSupabaseConfigured) return;
+
+  if (isNative()) {
+    // Native: use in-app browser + deep link callback
+    const redirectTo = "https://nos-divers-web.vercel.app/oauth-callback";
+
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo,
+        skipBrowserRedirect: true,
+        ...(provider === "kakao" ? { scopes: "profile_nickname profile_image" } : {}),
+      },
+    });
+
+    if (error || !data.url) return;
+
+    // Open in-app browser
+    await Browser.open({ url: data.url, windowName: "_self" });
+  } else {
+    // Web: standard redirect
+    await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: window.location.origin,
+        ...(provider === "kakao" ? {
+          scopes: "profile_nickname profile_image",
+          queryParams: { scope: "profile_nickname profile_image" },
+        } : {}),
+      },
+    });
   }
 }
 
@@ -75,26 +101,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s);
       setUser(s?.user ?? null);
-      if (s?.user) {
-        syncProfileFromUser(s.user);
-      }
+      if (s?.user) syncProfileFromUser(s.user);
       setLoading(false);
     });
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, s) => {
-        setSession(s);
-        setUser(s?.user ?? null);
-        if (s?.user) {
-          syncProfileFromUser(s.user);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
+      setSession(s);
+      setUser(s?.user ?? null);
+      if (s?.user) syncProfileFromUser(s.user);
+      setLoading(false);
+    });
+
+    // Native: listen for deep link callback from OAuth
+    let appUrlListener: { remove: () => void } | undefined;
+    if (isNative()) {
+      CapApp.addListener("appUrlOpen", async ({ url }) => {
+        // Close the in-app browser
+        try { await Browser.close(); } catch {}
+
+        // Extract tokens from URL
+        const hashPart = url.includes("#") ? url.split("#")[1] : "";
+        const params = new URLSearchParams(hashPart);
+        const accessToken = params.get("access_token");
+        const refreshToken = params.get("refresh_token");
+
+        if (accessToken && refreshToken) {
+          await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
         }
-        setLoading(false);
-      }
-    );
+      }).then(l => { appUrlListener = l; });
+    }
 
     return () => {
       subscription.unsubscribe();
+      appUrlListener?.remove();
     };
   }, []);
 
@@ -113,48 +156,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       options: { data: { full_name: name } },
     });
     if (error) return { error: error.message };
-    // 가입 후 자동로그인 방지 — 로그인 화면으로 돌아가도록 즉시 로그아웃
     await supabase.auth.signOut();
     return { error: null };
   }, []);
 
-  const signInWithKakao = useCallback(async () => {
-    if (!isSupabaseConfigured) return;
-    await supabase.auth.signInWithOAuth({
-      provider: "kakao",
-      options: {
-        redirectTo: getRedirectUrl(),
-        scopes: "profile_nickname profile_image",
-        queryParams: {
-          scope: "profile_nickname profile_image",
-        },
-      },
-    });
-  }, []);
-
-  const signInWithGoogle = useCallback(async () => {
-    if (!isSupabaseConfigured) return;
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: getRedirectUrl(),
-      },
-    });
-  }, []);
+  const signInWithKakao = useCallback(() => handleOAuth("kakao"), []);
+  const signInWithGoogle = useCallback(() => handleOAuth("google"), []);
 
   const resetPassword = useCallback(async (email: string) => {
     if (!isSupabaseConfigured) return { error: "Supabase가 설정되지 않았습니다" };
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: getRedirectUrl(),
+      redirectTo: window.location.origin,
     });
     if (error) return { error: error.message };
     return { error: null };
   }, []);
 
   const signOut = useCallback(async () => {
-    if (isSupabaseConfigured) {
-      await supabase.auth.signOut();
-    }
+    if (isSupabaseConfigured) await supabase.auth.signOut();
     setUser(null);
     setSession(null);
   }, []);

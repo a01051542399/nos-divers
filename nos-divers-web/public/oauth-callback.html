@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>로그인 중...</title>
+  <style>
+    body { display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; font-family: -apple-system, sans-serif; background: #E6F4FE; }
+    .msg { text-align: center; color: #333; }
+  </style>
+</head>
+<body>
+  <div class="msg">
+    <p>로그인 처리 중...</p>
+  </div>
+  <script>
+    // This page receives the OAuth callback from Supabase.
+    // It redirects the tokens back to the Capacitor app via deep link.
+    const hash = window.location.hash.substring(1);
+    if (hash) {
+      // Redirect to app with tokens
+      window.location.href = "com.nosdivers.app://callback#" + hash;
+    } else {
+      // No hash, try query params (some providers use code flow)
+      const params = window.location.search;
+      if (params) {
+        window.location.href = "com.nosdivers.app://callback" + params;
+      } else {
+        document.querySelector('.msg').innerHTML = '<p>로그인 완료. 앱으로 돌아가주세요.</p>';
+      }
+    }
+  </script>
+</body>
+</html>
