@@ -6,6 +6,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { AuthProvider, useAuth } from "./src/lib/AuthContext";
+import { ToastProvider } from "./src/components/Toast";
 
 import LoginScreen from "./src/screens/LoginScreen";
 import TourListScreen from "./src/screens/TourListScreen";
@@ -126,12 +127,14 @@ function AppContent() {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <NavigationContainer>
-        <AuthProvider>
-          <StatusBar style="dark" />
-          <AppContent />
-        </AuthProvider>
-      </NavigationContainer>
+      <ToastProvider>
+        <NavigationContainer>
+          <AuthProvider>
+            <StatusBar style="dark" />
+            <AppContent />
+          </AuthProvider>
+        </NavigationContainer>
+      </ToastProvider>
     </SafeAreaProvider>
   );
 }
