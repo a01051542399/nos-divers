@@ -147,22 +147,35 @@ export default function WaiversScreen() {
                       {signed ? "서명 완료" : "미서명"}
                     </Text>
                   </View>
-                  {!signed ? (
-                    currentUser === p.name ? (
-                      <TouchableOpacity
-                        style={styles.signBtn}
-                        onPress={() =>
-                          navigation.navigate("WaiverSign", {
-                            tourId: tour.id,
-                          })
+                  {signed ? (
+                    <TouchableOpacity
+                      style={styles.viewBtn}
+                      onPress={() => {
+                        const w = waivers.find((wv) => wv.signerName === p.name);
+                        if (w) {
+                          navigation.navigate("WaiverView", {
+                            waiver: w,
+                            tourName: tour.name,
+                          });
                         }
-                      >
-                        <Text style={styles.signBtnText}>서명</Text>
-                      </TouchableOpacity>
-                    ) : (
-                      <Text style={styles.onlySelfText}>본인만 가능</Text>
-                    )
-                  ) : null}
+                      }}
+                    >
+                      <Text style={styles.viewBtnText}>보기</Text>
+                    </TouchableOpacity>
+                  ) : currentUser === p.name ? (
+                    <TouchableOpacity
+                      style={styles.signBtn}
+                      onPress={() =>
+                        navigation.navigate("WaiverSign", {
+                          tourId: tour.id,
+                        })
+                      }
+                    >
+                      <Text style={styles.signBtnText}>서명</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <Text style={styles.onlySelfText}>본인만 가능</Text>
+                  )}
                 </View>
               );
             }}
@@ -375,5 +388,16 @@ const styles = StyleSheet.create({
   onlySelfText: {
     fontSize: 11,
     color: "#999",
+  },
+  viewBtn: {
+    backgroundColor: "#4CAF50",
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+  },
+  viewBtnText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "600",
   },
 });

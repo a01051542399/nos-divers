@@ -18,6 +18,7 @@ import CreateTourScreen from "./src/screens/CreateTourScreen";
 import JoinTourScreen from "./src/screens/JoinTourScreen";
 import WaiversScreen from "./src/screens/WaiversScreen";
 import WaiverSignScreen from "./src/screens/WaiverSignScreen";
+import WaiverViewScreen from "./src/screens/WaiverViewScreen";
 import TourDetailScreen from "./src/screens/TourDetailScreen";
 import SettingsScreen from "./src/screens/SettingsScreen";
 import AddExpenseScreen from "./src/screens/AddExpenseScreen";
@@ -78,6 +79,11 @@ function WaiversStack() {
         name="WaiverSign"
         component={WaiverSignScreen}
         options={{ presentation: "modal", animation: "slide_from_bottom" }}
+      />
+      <Stack.Screen
+        name="WaiverView"
+        component={WaiverViewScreen}
+        options={{ animation: "slide_from_right" }}
       />
     </Stack.Navigator>
   );
