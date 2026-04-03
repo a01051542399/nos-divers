@@ -10,6 +10,7 @@ export const isSupabaseConfigured = !!supabaseUrl && !!supabaseAnonKey;
 export const supabase: SupabaseClient = isSupabaseConfigured
   ? createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
+        flowType: 'pkce',
         storage: window.localStorage,
         persistSession: true,
         autoRefreshToken: true,
