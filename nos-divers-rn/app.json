@@ -36,6 +36,12 @@
     "plugins": [
       "expo-secure-store",
       "expo-web-browser"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "17cfea08-73b7-4ddb-9374-bd3358edba23"
+      }
+    },
+    "owner": "giantm"
   }
 }
