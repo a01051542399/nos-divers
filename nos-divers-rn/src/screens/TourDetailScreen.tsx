@@ -76,6 +76,10 @@ export default function TourDetailScreen() {
   const [commentText, setCommentText] = useState("");
   const [sendingComment, setSendingComment] = useState(false);
 
+  // 댓글 수정
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editText, setEditText] = useState("");
+
   // 비용 카드 펼침
   const [expandedExpenseId, setExpandedExpenseId] = useState<number | null>(null);
 
@@ -130,24 +134,6 @@ export default function TourDetailScreen() {
     }
   };
 
-  const handleRemoveParticipant = (pid: number, name: string) => {
-    Alert.alert("참여자 삭제", `${name}님을 삭제하시겠습니까?`, [
-      { text: "취소", style: "cancel" },
-      {
-        text: "삭제",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await db.removeParticipant(tourId, pid);
-            await refresh();
-          } catch (e: any) {
-            Alert.alert("오류", e.message || "삭제에 실패했습니다");
-          }
-        },
-      },
-    ]);
-  };
-
   const handleSendComment = async () => {
     const text = commentText.trim();
     if (!text) return;
@@ -165,6 +151,35 @@ export default function TourDetailScreen() {
     } finally {
       setSendingComment(false);
     }
+  };
+
+  const handleEditComment = async (commentId: number) => {
+    const text = editText.trim();
+    if (!text) return;
+    try {
+      await db.editComment(commentId, text);
+      setEditingCommentId(null);
+      setEditText("");
+    } catch {
+      Alert.alert("오류", "댓글 수정에 실패했습니다");
+    }
+  };
+
+  const handleDeleteComment = (commentId: number) => {
+    Alert.alert("댓글 삭제", "이 댓글을 삭제하시겠습니까?", [
+      { text: "취소", style: "cancel" },
+      {
+        text: "삭제",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await removeComment(commentId);
+          } catch {
+            Alert.alert("오류", "댓글 삭제에 실패했습니다");
+          }
+        },
+      },
+    ]);
   };
 
   const handleCopyInviteCode = () => {
@@ -411,12 +426,6 @@ export default function TourDetailScreen() {
                   <Text style={styles.itemSub}>추가: {p.addedBy}</Text>
                 )}
               </View>
-              <TouchableOpacity
-                onPress={() => handleRemoveParticipant(p.id, p.name)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Text style={{ color: C.red, fontSize: 14 }}>삭제</Text>
-              </TouchableOpacity>
             </View>
           );
         })
@@ -432,18 +441,74 @@ export default function TourDetailScreen() {
             아직 댓글이 없습니다
           </Text>
         ) : (
-          comments.map((c) => (
-            <View key={c.id} style={styles.commentItem}>
-              <View style={styles.commentHeader}>
-                <Text style={styles.commentAuthor}>{c.authorName}</Text>
-                <Text style={styles.commentTime}>
-                  {formatDate(c.createdAt)}
-                  {c.edited ? " (수정됨)" : ""}
-                </Text>
+          comments.map((c) => {
+            const isOwn = c.authorName === profile?.name;
+            const isEditing = editingCommentId === c.id;
+            return (
+              <View key={c.id} style={styles.commentItem}>
+                <View style={styles.commentHeader}>
+                  <Text style={styles.commentAuthor}>{c.authorName}</Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                    <Text style={styles.commentTime}>
+                      {formatDate(c.createdAt)}
+                      {c.edited ? " (수정됨)" : ""}
+                    </Text>
+                    {isOwn && !isEditing && (
+                      <>
+                        <TouchableOpacity
+                          onPress={() => {
+                            setEditingCommentId(c.id);
+                            setEditText(c.text);
+                          }}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 4 }}
+                        >
+                          <Text style={{ color: C.muted, fontSize: 12 }}>수정</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => handleDeleteComment(c.id)}
+                          hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }}
+                        >
+                          <Text style={{ color: C.red, fontSize: 12 }}>삭제</Text>
+                        </TouchableOpacity>
+                      </>
+                    )}
+                  </View>
+                </View>
+                {isEditing ? (
+                  <View style={{ marginTop: 4 }}>
+                    <TextInput
+                      style={[styles.commentInput, { marginBottom: 6 }]}
+                      value={editText}
+                      onChangeText={setEditText}
+                      multiline
+                      autoFocus
+                      placeholderTextColor={C.muted}
+                    />
+                    <View style={{ flexDirection: "row", gap: 8 }}>
+                      <TouchableOpacity
+                        style={[styles.commentSendBtn, { flex: 1 }]}
+                        onPress={() => handleEditComment(c.id)}
+                        disabled={!editText.trim()}
+                      >
+                        <Text style={styles.addBtnText}>저장</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.commentSendBtn, { flex: 1, backgroundColor: C.muted }]}
+                        onPress={() => {
+                          setEditingCommentId(null);
+                          setEditText("");
+                        }}
+                      >
+                        <Text style={styles.addBtnText}>취소</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ) : (
+                  <Text style={styles.commentText}>{c.text}</Text>
+                )}
               </View>
-              <Text style={styles.commentText}>{c.text}</Text>
-            </View>
-          ))
+            );
+          })
         )}
 
         {/* 댓글 입력 */}
