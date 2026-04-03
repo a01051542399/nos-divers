@@ -638,8 +638,8 @@ export default function AddExpenseScreen() {
           <Text style={styles.label}>금액</Text>
           <TextInput
             style={styles.input}
-            value={amount}
-            onChangeText={setAmount}
+            value={amount ? Number(amount.replace(/[^0-9]/g, "")).toLocaleString("ko-KR") : ""}
+            onChangeText={(v) => setAmount(v.replace(/[^0-9]/g, ""))}
             placeholder="0"
             placeholderTextColor={C.muted}
             keyboardType="numeric"
@@ -761,9 +761,24 @@ export default function AddExpenseScreen() {
           </View>
 
           {/* 분배 대상 */}
-          <Text style={styles.label}>
-            분배 대상 ({splitAmong.length}/{participants.length})
-          </Text>
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 16, marginBottom: 6 }}>
+            <Text style={[styles.label, { marginTop: 0, marginBottom: 0 }]}>
+              분배 대상 ({splitAmong.length}/{participants.length})
+            </Text>
+            <TouchableOpacity
+              onPress={() => {
+                if (splitAmong.length === participants.length) {
+                  setSplitAmong([]);
+                } else {
+                  setSplitAmong(participants.map((p) => p.id));
+                }
+              }}
+            >
+              <Text style={{ color: C.accent, fontSize: 13, fontWeight: "600" }}>
+                {splitAmong.length === participants.length ? "전체 해제" : "모두 선택"}
+              </Text>
+            </TouchableOpacity>
+          </View>
 
           {splitType === "equal" ? (
             <View style={styles.participantGrid}>
