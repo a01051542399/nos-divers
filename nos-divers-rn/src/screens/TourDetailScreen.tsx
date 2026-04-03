@@ -29,7 +29,7 @@ import PinModal from "../components/PinModal";
 import { useToast } from "../components/Toast";
 import { exportSettlementPDF } from "../utils/export-pdf";
 import { exportSettlementExcel } from "../utils/export-excel";
-import { useTheme } from "../components/ThemeContext";
+// Theme: using consistent light colors (not dynamic theme)
 
 type Tab = "participants" | "expenses" | "settlement";
 
@@ -39,26 +39,23 @@ type ExpensePinAction = "expenseEdit" | "expenseDelete" | null;
 export default function TourDetailScreen() {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
-  const { colors } = useTheme();
   const C = {
-    bg: colors.bg,
-    card: colors.card,
-    border: colors.border,
-    text: colors.text,
-    muted: colors.muted,
-    accent: colors.primary,
-    green: colors.success,
-    red: colors.error,
-    orange: colors.warning,
-    tabActive: colors.primary,
-    tabInactive: colors.muted,
+    bg: "#E8F4F8",
+    card: "#FFFFFF",
+    border: "#D1E6ED",
+    text: "#023E58",
+    muted: "#3D7A94",
+    accent: "#2196F3",
+    green: "#4CAF50",
+    red: "#F44336",
+    orange: "#FF9800",
+    tabActive: "#2196F3",
+    tabInactive: "#3D7A94",
   };
   const tourId = route.params?.tourId as number;
   const onBack = () => navigation.goBack();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const styles = useMemo(() => makeStyles(C), [colors]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const editStyles = useMemo(() => makeEditStyles(C), [colors]);
+  const styles = useMemo(() => makeStyles(C), []);
+  const editStyles = useMemo(() => makeEditStyles(C), []);
   const { tour, loading, refresh } = useTourDetail(tourId);
   const {
     comments,
@@ -432,11 +429,10 @@ export default function TourDetailScreen() {
           const hasSigned = waivers.some(
             (w) => w.signerName === p.name,
           );
-          const isAddedByOther = p.addedBy && p.addedBy !== p.name;
           const isInvolved = tour.expenses.some(
             (e) => e.paidBy === p.id || e.splitAmong.includes(p.id),
           );
-          const canDelete = isAddedByOther && !isInvolved;
+          const canDelete = !isInvolved;
           return (
             <View key={p.id} style={[styles.listItem, { justifyContent: "space-between" }]}>
               <View
@@ -451,7 +447,7 @@ export default function TourDetailScreen() {
               />
               <View style={{ flex: 1 }}>
                 <Text style={styles.itemTitle}>{p.name}</Text>
-                {isAddedByOther && (
+                {p.addedBy && (
                   <Text style={styles.itemSub}>추가: {p.addedBy}</Text>
                 )}
               </View>
