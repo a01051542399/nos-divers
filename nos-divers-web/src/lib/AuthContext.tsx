@@ -35,7 +35,7 @@ export function useAuth() {
   return useContext(AuthContext);
 }
 
-/** Sync auth user metadata → profiles table (only fills in empty fields) */
+/** Sync auth user metadata → profiles table */
 async function syncProfileFromUser(user: User) {
   try {
     const meta = user.user_metadata || {};
@@ -45,45 +45,34 @@ async function syncProfileFromUser(user: User) {
     if (name !== existing.name || email !== existing.email) {
       await db.setProfile({ ...existing, name, email, grade: existing.grade || "멤버" });
     }
-  } catch {
-    // Profile sync is best-effort
-  }
+  } catch {}
 }
 
-/** Handle OAuth for both web and native Capacitor */
-async function handleOAuth(provider: "kakao" | "google") {
-  if (!isSupabaseConfigured) return;
-
-  if (isNative()) {
-    // Native: use in-app browser + deep link callback
-    const redirectTo = "https://nos-divers-web.vercel.app/oauth-callback";
-
+/** Native OAuth: system browser + deep link + PKCE code exchange */
+async function handleNativeOAuth(provider: "kakao" | "google") {
+  try {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo,
+        redirectTo: "com.nosdivers.app://callback",
         skipBrowserRedirect: true,
-        ...(provider === "kakao" ? { scopes: "profile_nickname profile_image" } : {}),
       },
     });
-
     if (error || !data.url) return;
-
-    // Open in-app browser
-    await Browser.open({ url: data.url, windowName: "_self" });
-  } else {
-    // Web: standard redirect
-    await supabase.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo: window.location.origin,
-        ...(provider === "kakao" ? {
-          scopes: "profile_nickname profile_image",
-          queryParams: { scope: "profile_nickname profile_image" },
-        } : {}),
-      },
-    });
+    await Browser.open({ url: data.url });
+  } catch {
+    // Browser.open failed silently
   }
+}
+
+/** Web OAuth: standard redirect */
+async function handleWebOAuth(provider: "kakao" | "google") {
+  await supabase.auth.signInWithOAuth({
+    provider,
+    options: {
+      redirectTo: window.location.origin,
+    },
+  });
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -97,7 +86,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Get initial session
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s);
       setUser(s?.user ?? null);
@@ -105,7 +93,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
       setUser(s?.user ?? null);
@@ -113,24 +100,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    // Native: listen for deep link callback from OAuth
+    // Native: listen for deep link with authorization code
     let appUrlListener: { remove: () => void } | undefined;
     if (isNative()) {
       CapApp.addListener("appUrlOpen", async ({ url }) => {
-        // Close the in-app browser
         try { await Browser.close(); } catch {}
 
-        // Extract tokens from URL
+        // Try hash fragment first (implicit flow: #access_token=...&refresh_token=...)
         const hashPart = url.includes("#") ? url.split("#")[1] : "";
-        const params = new URLSearchParams(hashPart);
-        const accessToken = params.get("access_token");
-        const refreshToken = params.get("refresh_token");
+        if (hashPart) {
+          const params = new URLSearchParams(hashPart);
+          const accessToken = params.get("access_token");
+          const refreshToken = params.get("refresh_token");
+          if (accessToken && refreshToken) {
+            await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+            return;
+          }
+        }
 
-        if (accessToken && refreshToken) {
-          await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-          });
+        // Try query parameter (PKCE flow: ?code=...)
+        const codeMatch = url.match(/[?&]code=([^&]+)/);
+        if (codeMatch) {
+          await supabase.auth.exchangeCodeForSession(codeMatch[1]);
         }
       }).then(l => { appUrlListener = l; });
     }
@@ -160,8 +151,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: null };
   }, []);
 
-  const signInWithKakao = useCallback(() => handleOAuth("kakao"), []);
-  const signInWithGoogle = useCallback(() => handleOAuth("google"), []);
+  const signInWithKakao = useCallback(async () => {
+    if (!isSupabaseConfigured) return;
+    const native = isNative();
+    if (native) {
+      await handleNativeOAuth("kakao");
+    } else {
+      await handleWebOAuth("kakao");
+    }
+  }, []);
+
+  const signInWithGoogle = useCallback(async () => {
+    if (!isSupabaseConfigured) return;
+    const native = isNative();
+    if (native) {
+      await handleNativeOAuth("google");
+    } else {
+      await handleWebOAuth("google");
+    }
+  }, []);
 
   const resetPassword = useCallback(async (email: string) => {
     if (!isSupabaseConfigured) return { error: "Supabase가 설정되지 않았습니다" };

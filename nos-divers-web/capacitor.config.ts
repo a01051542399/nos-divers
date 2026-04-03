@@ -8,12 +8,14 @@ const config: CapacitorConfig = {
     androidScheme: 'https',
     allowNavigation: [
       '*.supabase.co',
+      'eomxrrepgstamhidsvlj.supabase.co',
       '*.kakao.com',
       'kauth.kakao.com',
       'accounts.kakao.com',
       'accounts.google.com',
       '*.google.com',
       '*.googleusercontent.com',
+      'localhost',
     ],
   },
   plugins: {
