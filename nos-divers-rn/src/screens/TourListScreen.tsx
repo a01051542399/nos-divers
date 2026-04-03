@@ -346,7 +346,7 @@ export default function TourListScreen() {
       {/* Logo */}
       <Image
         source={require("../../assets/logo-full-official.png")}
-        style={{ width: 180, height: 50, resizeMode: "contain", alignSelf: "center", marginTop: 4, marginBottom: 8 }}
+        style={{ width: 240, height: 65, resizeMode: "contain", alignSelf: "center", marginTop: 4, marginBottom: 8 }}
       />
 
       {/* Header */}

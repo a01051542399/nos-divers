@@ -832,6 +832,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#C0CDD4",
     pointerEvents: "none",
+    textAlign: "center",
   },
   clearBtn: {
     borderTopWidth: 1,

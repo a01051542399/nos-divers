@@ -119,6 +119,25 @@ export default function TourDetailScreen() {
 
   // ─── Handlers ───
 
+  const handleRemoveParticipant = async (participantId: number, name: string) => {
+    if (!tour) return;
+    Alert.alert("참여자 삭제", `"${name}"을(를) 삭제하시겠습니까?`, [
+      { text: "취소", style: "cancel" },
+      {
+        text: "삭제",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await db.removeParticipant(tour.id, participantId);
+            await refresh();
+          } catch (e: any) {
+            Alert.alert("오류", e.message || "참여자 삭제에 실패했습니다");
+          }
+        },
+      },
+    ]);
+  };
+
   const handleAddParticipant = async () => {
     const name = newParticipantName.trim();
     if (!name || !tour) return;
@@ -371,7 +390,12 @@ export default function TourDetailScreen() {
   // ─── 참여자 탭 ───
 
   const renderParticipantsTab = () => (
-    <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={styles.tabContent}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+      contentContainerStyle={{ paddingBottom: 120 }}
+    >
       {/* 참여자 추가 */}
       <View style={styles.addRow}>
         <TextInput
@@ -408,8 +432,13 @@ export default function TourDetailScreen() {
           const hasSigned = waivers.some(
             (w) => w.signerName === p.name,
           );
+          const isAddedByOther = p.addedBy && p.addedBy !== p.name;
+          const isInvolved = tour.expenses.some(
+            (e) => e.paidBy === p.id || e.splitAmong.includes(p.id),
+          );
+          const canDelete = isAddedByOther && !isInvolved;
           return (
-            <View key={p.id} style={styles.listItem}>
+            <View key={p.id} style={[styles.listItem, { justifyContent: "space-between" }]}>
               <View
                 style={{
                   width: 8,
@@ -422,10 +451,26 @@ export default function TourDetailScreen() {
               />
               <View style={{ flex: 1 }}>
                 <Text style={styles.itemTitle}>{p.name}</Text>
-                {p.addedBy && (
+                {isAddedByOther && (
                   <Text style={styles.itemSub}>추가: {p.addedBy}</Text>
                 )}
               </View>
+              {canDelete && (
+                <TouchableOpacity
+                  onPress={() => handleRemoveParticipant(p.id, p.name)}
+                  style={{
+                    marginLeft: 8,
+                    paddingHorizontal: 10,
+                    paddingVertical: 4,
+                    borderRadius: 6,
+                    borderWidth: 1,
+                    borderColor: C.red,
+                  }}
+                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                >
+                  <Text style={{ color: C.red, fontSize: 12, fontWeight: "600" }}>삭제</Text>
+                </TouchableOpacity>
+              )}
             </View>
           );
         })
@@ -486,20 +531,20 @@ export default function TourDetailScreen() {
                     />
                     <View style={{ flexDirection: "row", gap: 8 }}>
                       <TouchableOpacity
-                        style={[styles.commentSendBtn, { flex: 1 }]}
+                        style={[styles.commentSendBtn, { flex: 1, paddingVertical: 10, minHeight: 40 }]}
                         onPress={() => handleEditComment(c.id)}
                         disabled={!editText.trim()}
                       >
-                        <Text style={styles.addBtnText}>저장</Text>
+                        <Text style={[styles.addBtnText, { fontSize: 14 }]}>저장</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
-                        style={[styles.commentSendBtn, { flex: 1, backgroundColor: C.muted }]}
+                        style={[styles.commentSendBtn, { flex: 1, backgroundColor: C.muted, paddingVertical: 10, minHeight: 40 }]}
                         onPress={() => {
                           setEditingCommentId(null);
                           setEditText("");
                         }}
                       >
-                        <Text style={styles.addBtnText}>취소</Text>
+                        <Text style={[styles.addBtnText, { fontSize: 14 }]}>취소</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -773,8 +818,8 @@ export default function TourDetailScreen() {
               }, 0);
             const balance = paid - owed;
             return (
-              <View key={p.id} style={styles.listItem}>
-                <Text style={styles.itemTitle}>{p.name}</Text>
+              <View key={p.id} style={[styles.listItem, { justifyContent: "space-between" }]}>
+                <Text style={[styles.itemTitle, { flex: 1 }]}>{p.name}</Text>
                 <View style={{ alignItems: "flex-end" }}>
                   <Text
                     style={{
