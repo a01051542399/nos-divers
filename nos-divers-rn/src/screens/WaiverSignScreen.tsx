@@ -66,6 +66,7 @@ const PERSONAL_FIELDS: {
     key: "emergencyContact",
     label: "비상 연락처 (관계)",
     placeholder: "예: 010-9876-5432 (배우자)",
+    keyboardType: "phone-pad",
   },
 ];
 
@@ -101,6 +102,8 @@ export default function WaiverSignScreen() {
   );
   const [healthOther, setHealthOther] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+
+  const scrollRef = useRef<ScrollView>(null);
 
   // Step 2: Canvas Signature via WebView
   const [hasSignature, setHasSignature] = useState(false);
@@ -186,8 +189,23 @@ window.ReactNativeWebView.postMessage(JSON.stringify({type:'image',data:c.toData
     );
   };
 
+  const formatEmergencyContact = (v: string) => {
+    // "010-1234-5678 (관계)" 형태 — 괄호 부분 보존하면서 숫자에 하이픈
+    const match = v.match(/^([\d-]+)\s*(\(.+\))?$/);
+    if (match) {
+      return formatPhone(match[1]) + (match[2] ? " " + match[2] : "");
+    }
+    // 숫자만 입력 중이면 전화번호 포맷
+    const digitsOnly = v.replace(/[^0-9]/g, "");
+    if (digitsOnly.length > 0 && digitsOnly.length === v.replace(/[-]/g, "").length) {
+      return formatPhone(v);
+    }
+    return v;
+  };
+
   const formatValue = (key: keyof WaiverPersonalInfo, v: string) => {
     if (key === "phone") return formatPhone(v);
+    if (key === "emergencyContact") return formatEmergencyContact(v);
     if (key === "birthDate") return formatBirth(v);
     return v;
   };
@@ -208,6 +226,7 @@ window.ReactNativeWebView.postMessage(JSON.stringify({type:'image',data:c.toData
     }
     setShowErrors(false);
     setStep(1);
+    setTimeout(() => scrollRef.current?.scrollTo({ y: 0, animated: false }), 50);
   };
 
   const handleStep1Next = () => {
@@ -219,6 +238,7 @@ window.ReactNativeWebView.postMessage(JSON.stringify({type:'image',data:c.toData
       return;
     }
     setStep(2);
+    setTimeout(() => scrollRef.current?.scrollTo({ y: 0, animated: false }), 50);
   };
 
   const handleSubmit = async () => {
@@ -322,10 +342,11 @@ window.ReactNativeWebView.postMessage(JSON.stringify({type:'image',data:c.toData
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <ScrollView
+          ref={scrollRef}
           style={{ flex: 1 }}
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
-          scrollEnabled={!isDrawing}
+          scrollEnabled={step !== 2}
         >
           {/* ── Step 0: Personal Info ── */}
           {step === 0 && (
