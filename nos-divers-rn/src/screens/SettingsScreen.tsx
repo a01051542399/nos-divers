@@ -3,10 +3,26 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from "rea
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { useAuth } from "../lib/AuthContext";
+import { useTheme, ThemeMode } from "../components/ThemeContext";
+
+const THEME_MODES: { value: ThemeMode; label: string }[] = [
+  { value: "light", label: "라이트" },
+  { value: "dark", label: "다크" },
+  { value: "system", label: "시스템" },
+];
 
 export default function SettingsScreen() {
   const navigation = useNavigation<any>();
   const { user, signOut } = useAuth();
+  const { mode, setMode } = useTheme();
+
+  const cycleModeLabel = THEME_MODES.find((m) => m.value === mode)?.label ?? "시스템";
+
+  const cycleThemeMode = () => {
+    const idx = THEME_MODES.findIndex((m) => m.value === mode);
+    const next = THEME_MODES[(idx + 1) % THEME_MODES.length];
+    setMode(next.value);
+  };
 
   const handleSignOut = () => {
     Alert.alert("로그아웃", "정말 로그아웃 하시겠습니까?", [
@@ -43,9 +59,9 @@ export default function SettingsScreen() {
 
         <Text style={styles.sectionTitle}>설정</Text>
         <View style={styles.card}>
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity style={styles.menuItem} onPress={cycleThemeMode}>
             <Text style={styles.menuText}>화면 모드</Text>
-            <Text style={styles.menuValue}>시스템</Text>
+            <Text style={styles.menuValue}>{cycleModeLabel} ›</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.menuItem}>
             <Text style={styles.menuText}>관리자 모드</Text>
