@@ -9,6 +9,7 @@ import { StatusBar } from "expo-status-bar";
 import { AuthProvider, useAuth } from "./src/lib/AuthContext";
 import { ToastProvider } from "./src/components/Toast";
 import { ThemeProvider } from "./src/components/ThemeContext";
+import { Ionicons } from "@expo/vector-icons";
 
 import LoginScreen from "./src/screens/LoginScreen";
 import SignupScreen from "./src/screens/SignupScreen";
@@ -25,6 +26,8 @@ import AddExpenseScreen from "./src/screens/AddExpenseScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
 import HiddenToursScreen from "./src/screens/HiddenToursScreen";
 import TrashScreen from "./src/screens/TrashScreen";
+import SettingsGuideScreen from "./src/screens/SettingsGuideScreen";
+import AdminDashboardScreen from "./src/screens/AdminDashboardScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -96,6 +99,16 @@ function SettingsStack() {
       <Stack.Screen name="Profile" component={ProfileScreen} />
       <Stack.Screen name="HiddenTours" component={HiddenToursScreen} />
       <Stack.Screen name="Trash" component={TrashScreen} />
+      <Stack.Screen
+        name="SettingsGuide"
+        component={SettingsGuideScreen}
+        options={{ animation: "slide_from_right" }}
+      />
+      <Stack.Screen
+        name="AdminDashboard"
+        component={AdminDashboardScreen}
+        options={{ animation: "slide_from_right" }}
+      />
     </Stack.Navigator>
   );
 }
@@ -122,17 +135,32 @@ function MainTabs() {
       <Tab.Screen
         name="Tours"
         component={ToursStack}
-        options={{ tabBarLabel: "투어", tabBarIcon: () => null }}
+        options={{
+          tabBarLabel: "투어",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="list" size={size} color={color} />
+          ),
+        }}
       />
       <Tab.Screen
         name="Waivers"
         component={WaiversStack}
-        options={{ tabBarLabel: "동의서", tabBarIcon: () => null }}
+        options={{
+          tabBarLabel: "동의서",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="document-text" size={size} color={color} />
+          ),
+        }}
       />
       <Tab.Screen
         name="SettingsTab"
         component={SettingsStack}
-        options={{ tabBarLabel: "설정", tabBarIcon: () => null }}
+        options={{
+          tabBarLabel: "설정",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="settings" size={size} color={color} />
+          ),
+        }}
       />
     </Tab.Navigator>
   );

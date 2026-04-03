@@ -5,11 +5,11 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Alert,
   Modal,
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
@@ -30,7 +30,7 @@ export default function SettingsScreen() {
   const { user, signOut } = useAuth();
   const { mode, setMode } = useTheme();
   const { settings, refresh: refreshSettings } = useAppSettings();
-  const { toast } = useToast();
+  const { toast, confirm } = useToast();
 
   // 비밀번호 변경 모달 상태
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -38,6 +38,11 @@ export default function SettingsScreen() {
   const [newPw, setNewPw] = useState("");
   const [confirmPw, setConfirmPw] = useState("");
   const [savingPw, setSavingPw] = useState(false);
+
+  // 관리자 모드 모달 상태
+  const [showAdminModal, setShowAdminModal] = useState(false);
+  const [adminPw, setAdminPw] = useState("");
+  const [verifyingAdmin, setVerifyingAdmin] = useState(false);
 
   const cycleModeLabel = THEME_MODES.find((m) => m.value === mode)?.label ?? "시스템";
 
@@ -47,11 +52,11 @@ export default function SettingsScreen() {
     setMode(next.value);
   };
 
-  const handleSignOut = () => {
-    Alert.alert("로그아웃", "정말 로그아웃 하시겠습니까?", [
-      { text: "취소", style: "cancel" },
-      { text: "로그아웃", style: "destructive", onPress: signOut },
-    ]);
+  const handleSignOut = async () => {
+    const confirmed = await confirm("정말 로그아웃 하시겠습니까?");
+    if (confirmed) {
+      await signOut();
+    }
   };
 
   const openPasswordModal = () => {
@@ -104,6 +109,37 @@ export default function SettingsScreen() {
     }
   };
 
+  const openAdminModal = () => {
+    setAdminPw("");
+    setShowAdminModal(true);
+  };
+
+  const closeAdminModal = () => {
+    setShowAdminModal(false);
+    setAdminPw("");
+  };
+
+  const handleAdminLogin = async () => {
+    if (!adminPw.trim()) {
+      toast("관리자 비밀번호를 입력해주세요", "error");
+      return;
+    }
+    try {
+      setVerifyingAdmin(true);
+      const ok = await db.verifyAdminPassword(adminPw);
+      if (ok) {
+        closeAdminModal();
+        navigation.navigate("AdminDashboard");
+      } else {
+        toast("관리자 비밀번호가 올바르지 않습니다", "error");
+      }
+    } catch {
+      toast("인증에 실패했습니다", "error");
+    } finally {
+      setVerifyingAdmin(false);
+    }
+  };
+
   const hasPassword = Boolean(settings.accountPassword);
 
   return (
@@ -149,13 +185,18 @@ export default function SettingsScreen() {
             <Text style={styles.menuText}>임시보관함</Text>
             <Text style={styles.menuValue}>›</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity style={styles.menuItem} onPress={openAdminModal}>
             <Text style={styles.menuText}>관리자 모드</Text>
+            <Text style={styles.menuValue}>›</Text>
           </TouchableOpacity>
         </View>
 
         <Text style={styles.sectionTitle}>정보</Text>
         <View style={styles.card}>
+          <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate("SettingsGuide")}>
+            <Text style={styles.menuText}>사용설명서</Text>
+            <Text style={styles.menuValue}>›</Text>
+          </TouchableOpacity>
           <View style={styles.menuItem}>
             <Text style={styles.menuText}>버전</Text>
             <Text style={styles.menuValue}>2.0.0</Text>
@@ -234,6 +275,62 @@ export default function SettingsScreen() {
                 <Text style={styles.saveButtonText}>
                   {savingPw ? "저장 중..." : "저장"}
                 </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* 관리자 모드 인증 모달 */}
+      <Modal
+        visible={showAdminModal}
+        transparent
+        animationType="fade"
+        onRequestClose={closeAdminModal}
+      >
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>관리자 인증</Text>
+            <Text style={styles.adminDesc}>
+              관리자 비밀번호를 입력하세요.
+            </Text>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>관리자 비밀번호</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={adminPw}
+                onChangeText={setAdminPw}
+                placeholder="비밀번호 입력"
+                placeholderTextColor="#9ca3af"
+                secureTextEntry
+                autoCapitalize="none"
+                onSubmitEditing={handleAdminLogin}
+                returnKeyType="done"
+              />
+            </View>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={closeAdminModal}
+                disabled={verifyingAdmin}
+              >
+                <Text style={styles.cancelButtonText}>취소</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.saveButton, verifyingAdmin && styles.saveButtonDisabled]}
+                onPress={handleAdminLogin}
+                disabled={verifyingAdmin}
+              >
+                {verifyingAdmin ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.saveButtonText}>확인</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
@@ -326,8 +423,14 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     color: "#023E58",
-    marginBottom: 20,
+    marginBottom: 8,
     textAlign: "center",
+  },
+  adminDesc: {
+    fontSize: 13,
+    color: "#6B7280",
+    textAlign: "center",
+    marginBottom: 20,
   },
   inputGroup: {
     marginBottom: 14,
