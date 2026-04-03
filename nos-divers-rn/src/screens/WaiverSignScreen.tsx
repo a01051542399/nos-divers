@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -10,9 +10,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  PanResponder,
+  LayoutChangeEvent,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRoute, useNavigation } from "@react-navigation/native";
+import Svg, { Path } from "react-native-svg";
+import { captureRef } from "react-native-view-shot";
 import type { WaiverPersonalInfo } from "../types";
 import * as db from "../lib/supabase-store";
 import type { UserProfile } from "../lib/supabase-store";
@@ -100,8 +104,36 @@ export default function WaiverSignScreen() {
   const [healthOther, setHealthOther] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
-  // Step 2: Signature (text-based for now)
-  const [signatureText, setSignatureText] = useState("");
+  // Step 2: Canvas Signature
+  const [paths, setPaths] = useState<string[]>([]);
+  const [currentPath, setCurrentPath] = useState<string>("");
+  const signatureRef = useRef<View>(null);
+  const [canvasWidth, setCanvasWidth] = useState(300);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: (evt) => {
+        const { locationX, locationY } = evt.nativeEvent;
+        setCurrentPath(`M ${locationX.toFixed(1)},${locationY.toFixed(1)}`);
+      },
+      onPanResponderMove: (evt) => {
+        const { locationX, locationY } = evt.nativeEvent;
+        setCurrentPath((prev) =>
+          prev + ` L ${locationX.toFixed(1)},${locationY.toFixed(1)}`
+        );
+      },
+      onPanResponderRelease: () => {
+        setCurrentPath((prev) => {
+          if (prev) {
+            setPaths((ps) => [...ps, prev]);
+          }
+          return "";
+        });
+      },
+    })
+  ).current;
 
   // Load tour + profile on mount
   useEffect(() => {
@@ -120,7 +152,6 @@ export default function WaiverSignScreen() {
         tourLocation: tourData?.location || "",
         emergencyContact: prof.emergencyContact || "",
       });
-      setSignatureText(prof.name || "");
       setDataLoaded(true);
     })();
   }, [tourId]);
@@ -180,8 +211,8 @@ export default function WaiverSignScreen() {
   };
 
   const handleSubmit = async () => {
-    if (!signatureText.trim()) {
-      Alert.alert("서명 필요", "서명란에 이름을 입력해주세요.");
+    if (paths.length === 0) {
+      Alert.alert("서명 필요", "서명란에 직접 서명해주세요.");
       return;
     }
 
@@ -201,10 +232,21 @@ export default function WaiverSignScreen() {
         return;
       }
 
-      // Generate a simple signature image placeholder (1x1 transparent PNG as base64)
-      // In a future update, this will be replaced with a canvas signature
-      const placeholderSignature =
+      // Capture the SVG canvas as base64 PNG
+      let signatureImage =
         "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+      try {
+        if (signatureRef.current) {
+          const uri = await captureRef(signatureRef, {
+            format: "png",
+            quality: 1,
+            result: "base64",
+          });
+          signatureImage = `data:image/png;base64,${uri}`;
+        }
+      } catch {
+        // If capture fails, proceed with placeholder
+      }
 
       // Save profile for future auto-fill
       await db.setProfile({
@@ -222,7 +264,7 @@ export default function WaiverSignScreen() {
         personalInfo,
         healthChecklist,
         healthOther: healthOther || undefined,
-        signatureImage: placeholderSignature,
+        signatureImage,
         agreed: true,
       });
 
@@ -453,21 +495,64 @@ export default function WaiverSignScreen() {
             <View>
               <Text style={styles.stepTitle}>3. 서명</Text>
               <Text style={styles.stepDesc}>
-                아래에 본인의 이름을 정확히 입력해주세요
+                아래 서명란에 손가락으로 직접 서명해주세요
               </Text>
 
-              <View style={styles.signatureBox}>
-                <TextInput
-                  style={styles.signatureInput}
-                  value={signatureText}
-                  onChangeText={setSignatureText}
-                  placeholder="본인 이름 (서명 대용)"
-                  placeholderTextColor="#A0B4BE"
-                  autoCapitalize="none"
-                />
-                <Text style={styles.signatureHint}>
-                  추후 캔버스 서명으로 업그레이드 예정
-                </Text>
+              {/* Signature canvas */}
+              <View
+                style={styles.signatureBox}
+                onLayout={(e: LayoutChangeEvent) =>
+                  setCanvasWidth(e.nativeEvent.layout.width)
+                }
+              >
+                <View
+                  ref={signatureRef}
+                  style={styles.signatureCanvas}
+                  {...panResponder.panHandlers}
+                >
+                  <Svg
+                    height={200}
+                    width={canvasWidth > 0 ? canvasWidth : "100%"}
+                  >
+                    {paths.map((d, i) => (
+                      <Path
+                        key={i}
+                        d={d}
+                        stroke="#023E58"
+                        strokeWidth={2.5}
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    ))}
+                    {currentPath ? (
+                      <Path
+                        d={currentPath}
+                        stroke="#023E58"
+                        strokeWidth={2.5}
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    ) : null}
+                  </Svg>
+                  {paths.length === 0 && !currentPath && (
+                    <Text style={styles.signaturePlaceholder}>
+                      여기에 서명하세요
+                    </Text>
+                  )}
+                </View>
+
+                {/* Clear button */}
+                <TouchableOpacity
+                  style={styles.clearBtn}
+                  onPress={() => {
+                    setPaths([]);
+                    setCurrentPath("");
+                  }}
+                >
+                  <Text style={styles.clearBtnText}>지우기</Text>
+                </TouchableOpacity>
               </View>
 
               <View style={{ marginVertical: 12 }}>
@@ -491,7 +576,7 @@ export default function WaiverSignScreen() {
                   style={[
                     styles.primaryBtn,
                     { flex: 2 },
-                    signatureText.trim()
+                    paths.length > 0
                       ? { backgroundColor: "#4CAF50" }
                       : { backgroundColor: "#999" },
                   ]}
@@ -749,26 +834,35 @@ const styles = StyleSheet.create({
   signatureBox: {
     backgroundColor: "#fff",
     borderRadius: 12,
-    padding: 20,
     borderWidth: 2,
     borderColor: "#D0D0D0",
     borderStyle: "dashed",
+    overflow: "hidden",
+  },
+  signatureCanvas: {
+    height: 200,
+    backgroundColor: "#fff",
+    position: "relative",
+    justifyContent: "center",
     alignItems: "center",
   },
-  signatureInput: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#023E58",
-    textAlign: "center",
-    width: "100%",
-    paddingVertical: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#023E58",
+  signaturePlaceholder: {
+    position: "absolute",
+    fontSize: 16,
+    color: "#C0CDD4",
+    pointerEvents: "none",
   },
-  signatureHint: {
-    marginTop: 10,
-    fontSize: 12,
-    color: "#999",
+  clearBtn: {
+    borderTopWidth: 1,
+    borderTopColor: "#E0E0E0",
+    paddingVertical: 10,
+    alignItems: "center",
+    backgroundColor: "#F9F9F9",
+  },
+  clearBtnText: {
+    fontSize: 14,
+    color: "#F44336",
+    fontWeight: "600",
   },
   signInfoText: {
     fontSize: 14,
