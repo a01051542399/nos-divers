@@ -8,5 +8,12 @@ export const isSupabaseConfigured = !!supabaseUrl && !!supabaseAnonKey;
 
 /** Supabase client — only usable when isSupabaseConfigured is true */
 export const supabase: SupabaseClient = isSupabaseConfigured
-  ? createClient(supabaseUrl, supabaseAnonKey)
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        storage: window.localStorage,
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+      },
+    })
   : (null as unknown as SupabaseClient);
