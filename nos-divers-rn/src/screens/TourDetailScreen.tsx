@@ -18,6 +18,7 @@ import {
   Modal,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from "react-native";
 import { useTourDetail, useComments, useProfile, useWaivers } from "../hooks/useSupabase";
 import { calculateSettlement, formatKRW, formatDate } from "../store";
@@ -46,6 +47,7 @@ const C = {
 type Tab = "participants" | "expenses" | "settlement";
 
 type PinAction = "edit" | "delete" | null;
+type ExpensePinAction = "expenseEdit" | "expenseDelete" | null;
 
 export default function TourDetailScreen() {
   const route = useRoute<any>();
@@ -69,7 +71,16 @@ export default function TourDetailScreen() {
   const [commentText, setCommentText] = useState("");
   const [sendingComment, setSendingComment] = useState(false);
 
-  // PIN 모달
+  // 비용 카드 펼침
+  const [expandedExpenseId, setExpandedExpenseId] = useState<number | null>(null);
+
+  // 비용 PIN 모달
+  const [expensePinVisible, setExpensePinVisible] = useState(false);
+  const [expensePinError, setExpensePinError] = useState<string | undefined>();
+  const [expensePinAction, setExpensePinAction] = useState<ExpensePinAction>(null);
+  const [targetExpenseId, setTargetExpenseId] = useState<number | null>(null);
+
+  // 투어 PIN 모달
   const [pinVisible, setPinVisible] = useState(false);
   const [pinError, setPinError] = useState<string | undefined>();
   const [pinAction, setPinAction] = useState<PinAction>(null);
@@ -220,6 +231,53 @@ export default function TourDetailScreen() {
       navigation.goBack();
     } catch (e: any) {
       toast(e.message || "삭제에 실패했습니다", "error");
+    }
+  };
+
+  // ─── 비용 액션 (수정/삭제) ───
+
+  const handleExpenseAction = (expense: Expense, action: ExpensePinAction) => {
+    setTargetExpenseId(expense.id);
+    setExpensePinAction(action);
+    setExpensePinError(undefined);
+    setExpensePinVisible(true);
+  };
+
+  const handleExpensePinSubmit = async (pin: string) => {
+    if (!tour) return;
+    try {
+      const ok = await db.verifyTourAccessCode(tour.id, pin);
+      if (!ok) {
+        setExpensePinError("PIN이 일치하지 않습니다");
+        return;
+      }
+      setExpensePinVisible(false);
+      setExpensePinError(undefined);
+
+      if (expensePinAction === "expenseEdit") {
+        const expense = tour.expenses.find((e) => e.id === targetExpenseId);
+        if (!expense) return;
+        navigation.navigate("AddExpense", {
+          tourId: tour.id,
+          participants: tour.participants,
+          expense,
+        });
+      } else if (expensePinAction === "expenseDelete") {
+        const expense = tour.expenses.find((e) => e.id === targetExpenseId);
+        if (!expense) return;
+        const confirmed = await confirm(`"${expense.name}" 비용을 삭제하시겠습니까?`);
+        if (!confirmed) return;
+        try {
+          await db.removeExpense(tour.id, expense.id);
+          setExpandedExpenseId(null);
+          toast("비용이 삭제되었습니다", "success");
+          await refresh();
+        } catch (e: any) {
+          toast(e.message || "삭제에 실패했습니다", "error");
+        }
+      }
+    } catch (e: any) {
+      setExpensePinError(e.message || "오류가 발생했습니다");
     }
   };
 
@@ -426,24 +484,117 @@ export default function TourDetailScreen() {
       ? formatKRW(expense.amount)
       : `${symbol}${expense.amount.toLocaleString()}`;
     const krwAmount = expense.amount * (expense.exchangeRate || 1);
+    const isExpanded = expandedExpenseId === expense.id;
+
+    const splitNames = expense.splitAmong
+      .map((pid) => getParticipantName(pid))
+      .join(", ");
 
     return (
-      <View key={expense.id} style={styles.listItem}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.itemTitle}>{expense.name}</Text>
-          <Text style={styles.itemSub}>
-            결제: {getParticipantName(expense.paidBy)} | 분배:{" "}
-            {expense.splitAmong.length}명
-          </Text>
-        </View>
-        <View style={{ alignItems: "flex-end" }}>
-          <Text style={[styles.itemTitle, { color: C.accent }]}>
-            {displayAmount}
-          </Text>
-          {!isKRW && (
-            <Text style={styles.itemSub}>{formatKRW(krwAmount)}</Text>
-          )}
-        </View>
+      <View key={expense.id} style={styles.expenseCard}>
+        {/* 헤더 행: 탭하면 펼침/접힘 */}
+        <TouchableOpacity
+          style={styles.expenseCardHeader}
+          onPress={() =>
+            setExpandedExpenseId(isExpanded ? null : expense.id)
+          }
+          activeOpacity={0.7}
+        >
+          <View style={{ flex: 1 }}>
+            <Text style={styles.itemTitle}>{expense.name}</Text>
+            <Text style={styles.itemSub}>
+              결제: {getParticipantName(expense.paidBy)} | 분배:{" "}
+              {expense.splitAmong.length}명
+            </Text>
+          </View>
+          <View style={{ alignItems: "flex-end" }}>
+            <Text style={[styles.itemTitle, { color: C.accent }]}>
+              {displayAmount}
+            </Text>
+            {!isKRW && (
+              <Text style={styles.itemSub}>{formatKRW(krwAmount)}</Text>
+            )}
+            <Text style={[styles.itemSub, { marginTop: 4 }]}>
+              {isExpanded ? "▲" : "▼"}
+            </Text>
+          </View>
+        </TouchableOpacity>
+
+        {/* 펼쳐진 상세 */}
+        {isExpanded && (
+          <View style={styles.expenseDetail}>
+            <View style={styles.expenseDetailDivider} />
+
+            <View style={styles.expenseDetailRow}>
+              <Text style={styles.expenseDetailLabel}>결제자</Text>
+              <Text style={styles.expenseDetailValue}>
+                {getParticipantName(expense.paidBy)}
+              </Text>
+            </View>
+
+            <View style={styles.expenseDetailRow}>
+              <Text style={styles.expenseDetailLabel}>분배 대상</Text>
+              <Text style={[styles.expenseDetailValue, { flex: 1, textAlign: "right" }]}>
+                {splitNames || "-"}
+              </Text>
+            </View>
+
+            <View style={styles.expenseDetailRow}>
+              <Text style={styles.expenseDetailLabel}>분배 방식</Text>
+              <Text style={styles.expenseDetailValue}>
+                {expense.splitType === "custom" ? "지정 분배" : "균등 분배"}
+              </Text>
+            </View>
+
+            {!isKRW && (
+              <View style={styles.expenseDetailRow}>
+                <Text style={styles.expenseDetailLabel}>통화/환율</Text>
+                <Text style={styles.expenseDetailValue}>
+                  {expense.currency} / 1{expense.currency} = ₩
+                  {expense.exchangeRate?.toLocaleString() ?? "1"}
+                </Text>
+              </View>
+            )}
+
+            {expense.createdAt && (
+              <View style={styles.expenseDetailRow}>
+                <Text style={styles.expenseDetailLabel}>등록일</Text>
+                <Text style={styles.expenseDetailValue}>
+                  {formatDate(expense.createdAt)}
+                </Text>
+              </View>
+            )}
+
+            {expense.receiptImage && (
+              <View style={{ marginTop: 10 }}>
+                <Text style={[styles.expenseDetailLabel, { marginBottom: 6 }]}>
+                  영수증
+                </Text>
+                <Image
+                  source={{ uri: expense.receiptImage }}
+                  style={styles.expenseReceiptThumb}
+                  resizeMode="cover"
+                />
+              </View>
+            )}
+
+            {/* 수정 / 삭제 버튼 */}
+            <View style={styles.expenseActions}>
+              <TouchableOpacity
+                style={styles.expenseEditBtn}
+                onPress={() => handleExpenseAction(expense, "expenseEdit")}
+              >
+                <Text style={styles.expenseEditBtnText}>수정</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.expenseDeleteBtn}
+                onPress={() => handleExpenseAction(expense, "expenseDelete")}
+              >
+                <Text style={styles.expenseDeleteBtnText}>삭제</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
       </View>
     );
   };
@@ -460,6 +611,19 @@ export default function TourDetailScreen() {
           {tour.expenses.length}건 | {tour.participants.length}명 참여
         </Text>
       </View>
+
+      {/* 비용 추가 버튼 */}
+      <TouchableOpacity
+        style={styles.addExpenseBtn}
+        onPress={() =>
+          navigation.navigate("AddExpense", {
+            tourId: tour.id,
+            participants: tour.participants,
+          })
+        }
+      >
+        <Text style={styles.addExpenseBtnText}>+ 비용 추가</Text>
+      </TouchableOpacity>
 
       {/* 비용 목록 */}
       {tour.expenses.length === 0 ? (
@@ -639,7 +803,7 @@ export default function TourDetailScreen() {
       {activeTab === "expenses" && renderExpensesTab()}
       {activeTab === "settlement" && renderSettlementTab()}
 
-      {/* PIN 모달 */}
+      {/* 투어 PIN 모달 */}
       <PinModal
         visible={pinVisible}
         title={pinAction === "edit" ? "수정 PIN 입력" : "삭제 PIN 입력"}
@@ -649,6 +813,18 @@ export default function TourDetailScreen() {
           setPinError(undefined);
         }}
         error={pinError}
+      />
+
+      {/* 비용 PIN 모달 */}
+      <PinModal
+        visible={expensePinVisible}
+        title={expensePinAction === "expenseEdit" ? "비용 수정 PIN 입력" : "비용 삭제 PIN 입력"}
+        onSubmit={handleExpensePinSubmit}
+        onCancel={() => {
+          setExpensePinVisible(false);
+          setExpensePinError(undefined);
+        }}
+        error={expensePinError}
       />
 
       {/* 투어 수정 모달 */}
@@ -985,6 +1161,97 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 14,
     justifyContent: "center",
+  },
+
+  // Expense card (expandable)
+  expenseCard: {
+    backgroundColor: C.card,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: C.border,
+    marginBottom: 8,
+    overflow: "hidden",
+  },
+  expenseCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 14,
+  },
+  expenseDetail: {
+    paddingHorizontal: 14,
+    paddingBottom: 14,
+  },
+  expenseDetailDivider: {
+    height: 1,
+    backgroundColor: C.border,
+    marginBottom: 10,
+  },
+  expenseDetailRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 6,
+  },
+  expenseDetailLabel: {
+    color: C.muted,
+    fontSize: 12,
+    fontWeight: "600",
+    minWidth: 60,
+  },
+  expenseDetailValue: {
+    color: C.text,
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  expenseReceiptThumb: {
+    width: "100%",
+    height: 140,
+    borderRadius: 8,
+  },
+  expenseActions: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 14,
+  },
+  expenseEditBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: C.accent,
+    alignItems: "center",
+  },
+  expenseEditBtnText: {
+    color: C.accent,
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  expenseDeleteBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: C.red,
+    alignItems: "center",
+  },
+  expenseDeleteBtnText: {
+    color: C.red,
+    fontSize: 14,
+    fontWeight: "700",
+  },
+
+  // Add expense button
+  addExpenseBtn: {
+    backgroundColor: C.accent,
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: "center",
+    marginBottom: 14,
+  },
+  addExpenseBtnText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "700",
   },
 
   // Misc
