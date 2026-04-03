@@ -25,19 +25,7 @@ import * as db from "../lib/supabase-store";
 import { formatKRW } from "../store";
 import type { Participant, Expense } from "../types";
 import { useToast } from "../components/Toast";
-
-// ─── Colors ───
-const C = {
-  bg: "#0D1117",
-  card: "#161B22",
-  border: "#30363D",
-  text: "#E6EDF3",
-  muted: "#8B949E",
-  accent: "#58A6FF",
-  green: "#3FB950",
-  red: "#F85149",
-  orange: "#D29922",
-};
+import { useTheme } from "../components/ThemeContext";
 
 const CURRENCIES = [
   { code: "KRW", symbol: "\u20A9", name: "\uD55C\uAD6D \uC6D0" },
@@ -52,6 +40,19 @@ export default function AddExpenseScreen() {
   const route = useRoute<any>();
   const navigation = useNavigation();
   const { toast } = useToast();
+  const { colors } = useTheme();
+
+  const C = {
+    bg: colors.bg,
+    card: colors.card,
+    border: colors.border,
+    text: colors.text,
+    muted: colors.muted,
+    accent: colors.primary,
+    green: colors.success,
+    red: colors.error,
+    orange: colors.warning,
+  };
 
   const tourId: number = route.params?.tourId;
   const participants: Participant[] = route.params?.participants ?? [];
@@ -95,6 +96,199 @@ export default function AddExpenseScreen() {
   const [showCamera, setShowCamera] = useState(false);
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const cameraRef = React.useRef<any>(null);
+
+  // ─── Styles (dynamic, depends on C) ───
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        safe: { flex: 1, backgroundColor: C.bg },
+        header: {
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          paddingHorizontal: 16,
+          paddingVertical: 14,
+          borderBottomWidth: 1,
+          borderBottomColor: C.border,
+        },
+        headerCancel: { color: C.muted, fontSize: 16 },
+        headerTitle: { color: C.text, fontSize: 17, fontWeight: "700" },
+        headerSave: { color: C.accent, fontSize: 16, fontWeight: "700" },
+        body: { flex: 1, paddingHorizontal: 16, paddingTop: 16 },
+
+        label: {
+          color: C.muted,
+          fontSize: 13,
+          fontWeight: "600",
+          marginTop: 16,
+          marginBottom: 6,
+        },
+        input: {
+          backgroundColor: C.card,
+          borderRadius: 10,
+          paddingHorizontal: 14,
+          paddingVertical: 12,
+          color: C.text,
+          fontSize: 16,
+          borderWidth: 1,
+          borderColor: C.border,
+        },
+
+        // Picker
+        pickerBtn: {
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          backgroundColor: C.card,
+          borderRadius: 10,
+          paddingHorizontal: 14,
+          paddingVertical: 12,
+          borderWidth: 1,
+          borderColor: C.border,
+        },
+        pickerBtnText: { color: C.text, fontSize: 15 },
+        pickerArrow: { color: C.muted, fontSize: 12 },
+
+        optionList: {
+          backgroundColor: C.card,
+          borderRadius: 10,
+          borderWidth: 1,
+          borderColor: C.border,
+          marginTop: 4,
+          overflow: "hidden",
+        },
+        optionItem: {
+          paddingHorizontal: 14,
+          paddingVertical: 11,
+          borderBottomWidth: 1,
+          borderBottomColor: C.border,
+        },
+        optionItemActive: { backgroundColor: "rgba(88,166,255,0.12)" },
+        optionText: { color: C.text, fontSize: 15 },
+        optionTextActive: { color: C.accent, fontWeight: "600" },
+
+        // Exchange rate
+        rateRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+        rateRefreshBtn: {
+          backgroundColor: C.card,
+          borderRadius: 10,
+          paddingHorizontal: 14,
+          paddingVertical: 12,
+          borderWidth: 1,
+          borderColor: C.accent,
+        },
+        rateRefreshText: { color: C.accent, fontSize: 14, fontWeight: "600" },
+        rateHint: { color: C.muted, fontSize: 13, marginTop: 4 },
+
+        // Split toggle
+        splitToggle: {
+          flexDirection: "row",
+          backgroundColor: C.card,
+          borderRadius: 10,
+          overflow: "hidden",
+          borderWidth: 1,
+          borderColor: C.border,
+        },
+        splitBtn: { flex: 1, paddingVertical: 11, alignItems: "center" },
+        splitBtnActive: { backgroundColor: C.accent },
+        splitBtnText: { color: C.muted, fontSize: 14, fontWeight: "600" },
+        splitBtnTextActive: { color: "#fff" },
+
+        // Participant chips
+        participantGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+        chipBtn: {
+          paddingHorizontal: 14,
+          paddingVertical: 8,
+          borderRadius: 20,
+          backgroundColor: C.card,
+          borderWidth: 1,
+          borderColor: C.border,
+        },
+        chipBtnActive: {
+          backgroundColor: "rgba(88,166,255,0.15)",
+          borderColor: C.accent,
+        },
+        chipText: { color: C.muted, fontSize: 14 },
+        chipTextActive: { color: C.accent, fontWeight: "600" },
+        perPersonHint: { color: C.muted, fontSize: 13, marginTop: 4, width: "100%" },
+
+        // Custom split
+        customSplitList: { gap: 8 },
+        customRow: {
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 10,
+        },
+        customAmountInput: {
+          flex: 1,
+          backgroundColor: C.card,
+          borderRadius: 10,
+          paddingHorizontal: 12,
+          paddingVertical: 8,
+          color: C.text,
+          fontSize: 15,
+          borderWidth: 1,
+          borderColor: C.border,
+          textAlign: "right",
+        },
+        customTotalRow: {
+          flexDirection: "row",
+          justifyContent: "space-between",
+          paddingTop: 8,
+          borderTopWidth: 1,
+          borderTopColor: C.border,
+          marginTop: 4,
+        },
+        customTotalLabel: { color: C.muted, fontSize: 14, fontWeight: "600" },
+        customTotalValue: { fontSize: 14, fontWeight: "700" },
+
+        // Receipt
+        receiptRow: { flexDirection: "row", alignItems: "center" },
+        receiptBtn: {
+          backgroundColor: C.card,
+          borderRadius: 10,
+          paddingHorizontal: 16,
+          paddingVertical: 10,
+          borderWidth: 1,
+          borderColor: C.border,
+        },
+        receiptBtnText: { color: C.accent, fontSize: 14, fontWeight: "600" },
+        receiptPreview: {
+          width: "100%",
+          height: 200,
+          borderRadius: 10,
+          marginTop: 10,
+        },
+
+        // Camera
+        cameraContainer: { flex: 1, backgroundColor: "#000" },
+        cameraPreview: { flex: 1 },
+        cameraOverlay: {
+          flex: 1,
+          justifyContent: "flex-end",
+          alignItems: "center",
+          paddingBottom: 40,
+        },
+        cameraCancel: { position: "absolute", top: 16, left: 16 },
+        cameraCancelText: { color: "#fff", fontSize: 16 },
+        captureBtn: {
+          width: 72,
+          height: 72,
+          borderRadius: 36,
+          borderWidth: 4,
+          borderColor: "#fff",
+          alignItems: "center",
+          justifyContent: "center",
+        },
+        captureBtnInner: {
+          width: 58,
+          height: 58,
+          borderRadius: 29,
+          backgroundColor: "#fff",
+        },
+      }),
+    [C.bg, C.card, C.border, C.text, C.muted, C.accent, C.green, C.red]
+  );
 
   // ─── Exchange rate auto-fetch ───
   const fetchExchangeRate = async (code: string) => {
@@ -529,193 +723,3 @@ export default function AddExpenseScreen() {
     </SafeAreaView>
   );
 }
-
-// ─── Styles ───
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: C.bg },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: C.border,
-  },
-  headerCancel: { color: C.muted, fontSize: 16 },
-  headerTitle: { color: C.text, fontSize: 17, fontWeight: "700" },
-  headerSave: { color: C.accent, fontSize: 16, fontWeight: "700" },
-  body: { flex: 1, paddingHorizontal: 16, paddingTop: 16 },
-
-  label: {
-    color: C.muted,
-    fontSize: 13,
-    fontWeight: "600",
-    marginTop: 16,
-    marginBottom: 6,
-  },
-  input: {
-    backgroundColor: C.card,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    color: C.text,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: C.border,
-  },
-
-  // Picker
-  pickerBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: C.card,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: C.border,
-  },
-  pickerBtnText: { color: C.text, fontSize: 15 },
-  pickerArrow: { color: C.muted, fontSize: 12 },
-
-  optionList: {
-    backgroundColor: C.card,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: C.border,
-    marginTop: 4,
-    overflow: "hidden",
-  },
-  optionItem: {
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-    borderBottomWidth: 1,
-    borderBottomColor: C.border,
-  },
-  optionItemActive: { backgroundColor: "rgba(88,166,255,0.12)" },
-  optionText: { color: C.text, fontSize: 15 },
-  optionTextActive: { color: C.accent, fontWeight: "600" },
-
-  // Exchange rate
-  rateRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  rateRefreshBtn: {
-    backgroundColor: C.card,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: C.accent,
-  },
-  rateRefreshText: { color: C.accent, fontSize: 14, fontWeight: "600" },
-  rateHint: { color: C.muted, fontSize: 13, marginTop: 4 },
-
-  // Split toggle
-  splitToggle: {
-    flexDirection: "row",
-    backgroundColor: C.card,
-    borderRadius: 10,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: C.border,
-  },
-  splitBtn: { flex: 1, paddingVertical: 11, alignItems: "center" },
-  splitBtnActive: { backgroundColor: C.accent },
-  splitBtnText: { color: C.muted, fontSize: 14, fontWeight: "600" },
-  splitBtnTextActive: { color: "#fff" },
-
-  // Participant chips
-  participantGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chipBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: C.card,
-    borderWidth: 1,
-    borderColor: C.border,
-  },
-  chipBtnActive: {
-    backgroundColor: "rgba(88,166,255,0.15)",
-    borderColor: C.accent,
-  },
-  chipText: { color: C.muted, fontSize: 14 },
-  chipTextActive: { color: C.accent, fontWeight: "600" },
-  perPersonHint: { color: C.muted, fontSize: 13, marginTop: 4, width: "100%" },
-
-  // Custom split
-  customSplitList: { gap: 8 },
-  customRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  customAmountInput: {
-    flex: 1,
-    backgroundColor: C.card,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    color: C.text,
-    fontSize: 15,
-    borderWidth: 1,
-    borderColor: C.border,
-    textAlign: "right",
-  },
-  customTotalRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: C.border,
-    marginTop: 4,
-  },
-  customTotalLabel: { color: C.muted, fontSize: 14, fontWeight: "600" },
-  customTotalValue: { fontSize: 14, fontWeight: "700" },
-
-  // Receipt
-  receiptRow: { flexDirection: "row", alignItems: "center" },
-  receiptBtn: {
-    backgroundColor: C.card,
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderWidth: 1,
-    borderColor: C.border,
-  },
-  receiptBtnText: { color: C.accent, fontSize: 14, fontWeight: "600" },
-  receiptPreview: {
-    width: "100%",
-    height: 200,
-    borderRadius: 10,
-    marginTop: 10,
-  },
-
-  // Camera
-  cameraContainer: { flex: 1, backgroundColor: "#000" },
-  cameraPreview: { flex: 1 },
-  cameraOverlay: {
-    flex: 1,
-    justifyContent: "flex-end",
-    alignItems: "center",
-    paddingBottom: 40,
-  },
-  cameraCancel: { position: "absolute", top: 16, left: 16 },
-  cameraCancelText: { color: "#fff", fontSize: 16 },
-  captureBtn: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    borderWidth: 4,
-    borderColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  captureBtnInner: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    backgroundColor: "#fff",
-  },
-});
