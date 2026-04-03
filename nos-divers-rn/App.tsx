@@ -12,8 +12,11 @@ import TourListScreen from "./src/screens/TourListScreen";
 import CreateTourScreen from "./src/screens/CreateTourScreen";
 import JoinTourScreen from "./src/screens/JoinTourScreen";
 import WaiversScreen from "./src/screens/WaiversScreen";
+import WaiverSignScreen from "./src/screens/WaiverSignScreen";
 import TourDetailScreen from "./src/screens/TourDetailScreen";
 import SettingsScreen from "./src/screens/SettingsScreen";
+import AddExpenseScreen from "./src/screens/AddExpenseScreen";
+import ProfileScreen from "./src/screens/ProfileScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -33,6 +36,33 @@ function ToursStack() {
         component={JoinTourScreen}
         options={{ presentation: "modal", animation: "slide_from_bottom" }}
       />
+      <Stack.Screen
+        name="AddExpense"
+        component={AddExpenseScreen}
+        options={{ presentation: "modal", animation: "slide_from_bottom" }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+function WaiversStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="WaiversList" component={WaiversScreen} />
+      <Stack.Screen
+        name="WaiverSign"
+        component={WaiverSignScreen}
+        options={{ presentation: "modal", animation: "slide_from_bottom" }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+function SettingsStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="SettingsMain" component={SettingsScreen} />
+      <Stack.Screen name="Profile" component={ProfileScreen} />
     </Stack.Navigator>
   );
 }
@@ -63,12 +93,12 @@ function MainTabs() {
       />
       <Tab.Screen
         name="Waivers"
-        component={WaiversScreen}
+        component={WaiversStack}
         options={{ tabBarLabel: "동의서", tabBarIcon: () => null }}
       />
       <Tab.Screen
-        name="Settings"
-        component={SettingsScreen}
+        name="SettingsTab"
+        component={SettingsStack}
         options={{ tabBarLabel: "설정", tabBarIcon: () => null }}
       />
     </Tab.Navigator>

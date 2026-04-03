@@ -1,9 +1,11 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
 import { useAuth } from "../lib/AuthContext";
 
 export default function SettingsScreen() {
+  const navigation = useNavigation<any>();
   const { user, signOut } = useAuth();
 
   const handleSignOut = () => {
@@ -27,9 +29,9 @@ export default function SettingsScreen() {
 
         <Text style={styles.sectionTitle}>계정</Text>
         <View style={styles.card}>
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate("Profile")}>
             <Text style={styles.menuText}>내 프로필</Text>
-            <Text style={styles.menuValue}>{user?.email ?? ""}</Text>
+            <Text style={styles.menuValue}>{user?.email ?? ""} ›</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.menuItem}>
             <Text style={styles.menuText}>비밀번호 변경</Text>
