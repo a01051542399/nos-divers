@@ -10,10 +10,12 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useProfile } from "../hooks/useSupabase";
+import { useProfile, useAppSettings } from "../hooks/useSupabase";
 import { useAuth } from "../lib/AuthContext";
+import { useToast } from "../components/Toast";
 import type { UserProfile } from "../store";
 
 const DIVING_LEVELS = ["OW", "AOW", "레스큐", "DM", "강사", "기타"];
@@ -39,6 +41,8 @@ export default function ProfileScreen() {
   const onBack = () => navigation.goBack();
   const { user } = useAuth();
   const { profile, loading, updateProfile } = useProfile();
+  const { settings } = useAppSettings();
+  const { toast } = useToast();
 
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<UserProfile>({
@@ -47,6 +51,11 @@ export default function ProfileScreen() {
     grade: "멤버",
   });
   const [saving, setSaving] = useState(false);
+
+  // 비밀번호 확인 모달
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinInput, setPinInput] = useState("");
+  const [pinError, setPinError] = useState("");
 
   useEffect(() => {
     if (profile) {
@@ -86,6 +95,40 @@ export default function ProfileScreen() {
     setEditing(false);
   };
 
+  // 수정 버튼 탭 → 비밀번호가 설정된 경우 모달 표시, 아니면 바로 편집 모드
+  const handleEditPress = () => {
+    if (settings.accountPassword) {
+      setPinInput("");
+      setPinError("");
+      setShowPinModal(true);
+    } else {
+      setForm({ ...profile });
+      setEditing(true);
+    }
+  };
+
+  const handlePinConfirm = () => {
+    if (!pinInput) {
+      setPinError("비밀번호를 입력해주세요");
+      return;
+    }
+    if (pinInput !== settings.accountPassword) {
+      setPinError("비밀번호가 일치하지 않습니다");
+      return;
+    }
+    setShowPinModal(false);
+    setPinInput("");
+    setPinError("");
+    setForm({ ...profile });
+    setEditing(true);
+  };
+
+  const handlePinCancel = () => {
+    setShowPinModal(false);
+    setPinInput("");
+    setPinError("");
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container} edges={["top"]}>
@@ -104,7 +147,7 @@ export default function ProfileScreen() {
         </TouchableOpacity>
         <Text style={styles.title}>내 프로필</Text>
         <TouchableOpacity
-          onPress={editing ? handleCancel : () => { setForm({ ...profile }); setEditing(true); }}
+          onPress={editing ? handleCancel : handleEditPress}
         >
           <Text style={styles.editBtn}>{editing ? "취소" : "수정"}</Text>
         </TouchableOpacity>
@@ -206,6 +249,56 @@ export default function ProfileScreen() {
           )}
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* 비밀번호 확인 모달 */}
+      <Modal
+        visible={showPinModal}
+        transparent
+        animationType="fade"
+        onRequestClose={handlePinCancel}
+      >
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>비밀번호 입력</Text>
+            <Text style={styles.modalDesc}>프로필 수정을 위해 비밀번호를 입력하세요</Text>
+
+            <TextInput
+              style={[styles.modalInput, pinError ? styles.modalInputError : null]}
+              value={pinInput}
+              onChangeText={(v) => {
+                setPinInput(v);
+                if (pinError) setPinError("");
+              }}
+              placeholder="비밀번호"
+              placeholderTextColor="#9ca3af"
+              secureTextEntry
+              autoCapitalize="none"
+              autoFocus
+            />
+            {pinError ? (
+              <Text style={styles.pinErrorText}>{pinError}</Text>
+            ) : null}
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={handlePinCancel}
+              >
+                <Text style={styles.cancelButtonText}>취소</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.confirmButton]}
+                onPress={handlePinConfirm}
+              >
+                <Text style={styles.confirmButtonText}>확인</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -403,5 +496,84 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "bold",
+  },
+  // 비밀번호 모달
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  modalCard: {
+    width: "100%",
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#023E58",
+    marginBottom: 6,
+    textAlign: "center",
+  },
+  modalDesc: {
+    fontSize: 13,
+    color: "#3D7A94",
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  modalInput: {
+    backgroundColor: "#F8FAFC",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: "#023E58",
+    marginBottom: 6,
+  },
+  modalInputError: {
+    borderColor: "#F44336",
+  },
+  pinErrorText: {
+    fontSize: 12,
+    color: "#F44336",
+    marginBottom: 12,
+    marginLeft: 2,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 12,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 13,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  cancelButton: {
+    backgroundColor: "#F0F0F0",
+  },
+  cancelButtonText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#666",
+  },
+  confirmButton: {
+    backgroundColor: "#0891b2",
+  },
+  confirmButtonText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#fff",
   },
 });

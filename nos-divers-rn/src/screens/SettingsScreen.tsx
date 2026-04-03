@@ -1,9 +1,23 @@
-import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from "react-native";
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Alert,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { useAuth } from "../lib/AuthContext";
 import { useTheme, ThemeMode } from "../components/ThemeContext";
+import { useAppSettings } from "../hooks/useSupabase";
+import { useToast } from "../components/Toast";
+import * as db from "../lib/supabase-store";
 
 const THEME_MODES: { value: ThemeMode; label: string }[] = [
   { value: "light", label: "라이트" },
@@ -15,6 +29,15 @@ export default function SettingsScreen() {
   const navigation = useNavigation<any>();
   const { user, signOut } = useAuth();
   const { mode, setMode } = useTheme();
+  const { settings, refresh: refreshSettings } = useAppSettings();
+  const { toast } = useToast();
+
+  // 비밀번호 변경 모달 상태
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [currentPw, setCurrentPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const [savingPw, setSavingPw] = useState(false);
 
   const cycleModeLabel = THEME_MODES.find((m) => m.value === mode)?.label ?? "시스템";
 
@@ -30,6 +53,58 @@ export default function SettingsScreen() {
       { text: "로그아웃", style: "destructive", onPress: signOut },
     ]);
   };
+
+  const openPasswordModal = () => {
+    setCurrentPw("");
+    setNewPw("");
+    setConfirmPw("");
+    setShowPasswordModal(true);
+  };
+
+  const closePasswordModal = () => {
+    setShowPasswordModal(false);
+    setCurrentPw("");
+    setNewPw("");
+    setConfirmPw("");
+  };
+
+  const handleSavePassword = async () => {
+    // 현재 비밀번호가 설정된 경우 검증
+    if (settings.accountPassword) {
+      if (!currentPw) {
+        toast("현재 비밀번호를 입력해주세요", "error");
+        return;
+      }
+      if (currentPw !== settings.accountPassword) {
+        toast("현재 비밀번호가 일치하지 않습니다", "error");
+        return;
+      }
+    }
+
+    if (newPw.length < 4) {
+      toast("새 비밀번호는 4자 이상이어야 합니다", "error");
+      return;
+    }
+
+    if (newPw !== confirmPw) {
+      toast("새 비밀번호가 일치하지 않습니다", "error");
+      return;
+    }
+
+    try {
+      setSavingPw(true);
+      await db.setAccountPassword(newPw);
+      await refreshSettings();
+      closePasswordModal();
+      toast("비밀번호가 변경되었습니다", "success");
+    } catch {
+      toast("비밀번호 변경에 실패했습니다", "error");
+    } finally {
+      setSavingPw(false);
+    }
+  };
+
+  const hasPassword = Boolean(settings.accountPassword);
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -49,8 +124,11 @@ export default function SettingsScreen() {
             <Text style={styles.menuText}>내 프로필</Text>
             <Text style={styles.menuValue}>{user?.email ?? ""} ›</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity style={styles.menuItem} onPress={openPasswordModal}>
             <Text style={styles.menuText}>비밀번호 변경</Text>
+            <Text style={styles.menuValue}>
+              {hasPassword ? "설정됨 ›" : "미설정 ›"}
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.menuItem} onPress={handleSignOut}>
             <Text style={[styles.menuText, { color: "#2196F3" }]}>로그아웃</Text>
@@ -84,6 +162,83 @@ export default function SettingsScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* 비밀번호 변경 모달 */}
+      <Modal
+        visible={showPasswordModal}
+        transparent
+        animationType="fade"
+        onRequestClose={closePasswordModal}
+      >
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>비밀번호 변경</Text>
+
+            {hasPassword && (
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>현재 비밀번호</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  value={currentPw}
+                  onChangeText={setCurrentPw}
+                  placeholder="현재 비밀번호 입력"
+                  placeholderTextColor="#9ca3af"
+                  secureTextEntry
+                  autoCapitalize="none"
+                />
+              </View>
+            )}
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>새 비밀번호</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={newPw}
+                onChangeText={setNewPw}
+                placeholder="새 비밀번호 (4자 이상)"
+                placeholderTextColor="#9ca3af"
+                secureTextEntry
+                autoCapitalize="none"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>비밀번호 확인</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={confirmPw}
+                onChangeText={setConfirmPw}
+                placeholder="비밀번호 다시 입력"
+                placeholderTextColor="#9ca3af"
+                secureTextEntry
+                autoCapitalize="none"
+              />
+            </View>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={closePasswordModal}
+                disabled={savingPw}
+              >
+                <Text style={styles.cancelButtonText}>취소</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.saveButton, savingPw && styles.saveButtonDisabled]}
+                onPress={handleSavePassword}
+                disabled={savingPw}
+              >
+                <Text style={styles.saveButtonText}>
+                  {savingPw ? "저장 중..." : "저장"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -147,5 +302,80 @@ const styles = StyleSheet.create({
   menuValue: {
     fontSize: 14,
     color: "#3D7A94",
+  },
+  // 모달 스타일
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  modalCard: {
+    width: "100%",
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#023E58",
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  inputGroup: {
+    marginBottom: 14,
+  },
+  inputLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#3D7A94",
+    marginBottom: 6,
+  },
+  modalInput: {
+    backgroundColor: "#F8FAFC",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: "#023E58",
+  },
+  modalButtons: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 8,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 13,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  cancelButton: {
+    backgroundColor: "#F0F0F0",
+  },
+  cancelButtonText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#666",
+  },
+  saveButton: {
+    backgroundColor: "#0891b2",
+  },
+  saveButtonDisabled: {
+    opacity: 0.6,
+  },
+  saveButtonText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#fff",
   },
 });
