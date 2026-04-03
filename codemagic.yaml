@@ -38,14 +38,18 @@ workflows:
       - name: Set up code signing
         script: |
           keychain initialize
+
+          # Generate a new private key for certificate creation
+          openssl genrsa -out /tmp/codemagic_cert_key.pem 2048
+
+          # Fetch or create signing files with the new key
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
-            --create
+            --create \
+            --certificate-key /tmp/codemagic_cert_key.pem
+
           keychain add-certificates
           xcode-project use-profiles --project "$XCODE_PROJECT"
-          # Explicitly set code signing for the target
-          cd ios/App
-          xcode-project use-profiles --project "App.xcodeproj"
 
       - name: Increment build number
         script: |
