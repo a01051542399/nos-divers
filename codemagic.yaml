@@ -46,7 +46,7 @@ workflows:
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --create \
-            --certificate-key /tmp/codemagic_cert_key.pem
+            --private-key /tmp/codemagic_cert_key.pem
 
           keychain add-certificates
           xcode-project use-profiles --project "$XCODE_PROJECT"
