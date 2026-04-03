@@ -1,8 +1,9 @@
 /**
  * 비용 추가/수정 화면 (모달)
- * - 비용명, 금액, 통화, 환율
+ * - 카테고리 선택 (다이빙/숙박/식비/기타)
+ * - 비용명, 시간, 금액, 통화, 환율
  * - 결제자, 분배 방식 (균등/지정)
- * - 영수증 사진 첨부
+ * - 영수증 사진 첨부 (촬영 or 갤러리)
  */
 import React, { useState, useEffect, useMemo } from "react";
 import {
@@ -21,6 +22,8 @@ import {
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { CameraView, useCameraPermissions } from "expo-camera";
+import * as ImagePicker from "expo-image-picker";
+import { Ionicons } from "@expo/vector-icons";
 import * as db from "../lib/supabase-store";
 import { formatKRW } from "../store";
 import type { Participant, Expense } from "../types";
@@ -35,6 +38,33 @@ const CURRENCIES = [
   { code: "IDR", symbol: "Rp", name: "\uC778\uB3C4\uB124\uC2DC\uC544 \uB8E8\uD53C\uC544" },
   { code: "JPY", symbol: "\u00A5", name: "\uC77C\uBCF8 \uC5D4" },
 ];
+
+const CATEGORIES = [
+  { label: "다이빙", icon: "water" as const },
+  { label: "숙박", icon: "bed" as const },
+  { label: "식비", icon: "restaurant" as const },
+  { label: "기타", icon: "ellipsis-horizontal" as const },
+];
+
+/** 비용명에서 카테고리 파싱: "[다이빙] 보트비" → { category: "다이빙", baseName: "보트비", time: "" } */
+function parseExpenseName(raw: string): { category: string; baseName: string; time: string } {
+  const categoryMatch = raw.match(/^\[(.+?)\]\s*/);
+  const category = categoryMatch ? categoryMatch[1] : "기타";
+  const withoutCategory = categoryMatch ? raw.slice(categoryMatch[0].length) : raw;
+
+  const timeMatch = withoutCategory.match(/\s*\((\d{1,2}:\d{2})\)$/);
+  const time = timeMatch ? timeMatch[1] : "";
+  const baseName = timeMatch ? withoutCategory.slice(0, -timeMatch[0].length) : withoutCategory;
+
+  const validCategory = CATEGORIES.some((c) => c.label === category) ? category : "기타";
+  return { category: validCategory, baseName, time };
+}
+
+/** 카테고리 + 이름 + 시간 조합 */
+function buildExpenseName(category: string, baseName: string, time: string): string {
+  const base = `[${category}] ${baseName.trim()}`;
+  return time.trim() ? `${base} (${time.trim()})` : base;
+}
 
 export default function AddExpenseScreen() {
   const route = useRoute<any>();
@@ -57,8 +87,16 @@ export default function AddExpenseScreen() {
   const existingExpense: Expense | undefined = route.params?.expense;
   const isEdit = !!existingExpense;
 
+  // ─── Parse existing expense name on edit ───
+  const parsed = useMemo(() => {
+    if (existingExpense?.name) return parseExpenseName(existingExpense.name);
+    return { category: "기타", baseName: "", time: "" };
+  }, [existingExpense]);
+
   // ─── Form state ───
-  const [name, setName] = useState(existingExpense?.name ?? "");
+  const [category, setCategory] = useState(parsed.category);
+  const [name, setName] = useState(parsed.baseName);
+  const [time, setTime] = useState(parsed.time);
   const [amount, setAmount] = useState(existingExpense ? String(existingExpense.amount) : "");
   const [currency, setCurrency] = useState(existingExpense?.currency ?? "KRW");
   const [exchangeRate, setExchangeRate] = useState(
@@ -131,6 +169,30 @@ export default function AddExpenseScreen() {
           borderWidth: 1,
           borderColor: C.border,
         },
+
+        // Category chips
+        categoryRow: {
+          flexDirection: "row",
+          gap: 8,
+        },
+        categoryChip: {
+          flex: 1,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 4,
+          paddingVertical: 9,
+          borderRadius: 10,
+          backgroundColor: C.card,
+          borderWidth: 1,
+          borderColor: C.border,
+        },
+        categoryChipActive: {
+          backgroundColor: C.accent,
+          borderColor: C.accent,
+        },
+        categoryChipText: { color: C.text, fontSize: 12, fontWeight: "600" },
+        categoryChipTextActive: { color: "#fff" },
 
         // Picker
         pickerBtn: {
@@ -241,16 +303,26 @@ export default function AddExpenseScreen() {
         customTotalValue: { fontSize: 14, fontWeight: "700" },
 
         // Receipt
-        receiptRow: { flexDirection: "row", alignItems: "center" },
+        receiptRow: { flexDirection: "row", alignItems: "center", gap: 8 },
         receiptBtn: {
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 6,
           backgroundColor: C.card,
           borderRadius: 10,
-          paddingHorizontal: 16,
+          paddingHorizontal: 14,
           paddingVertical: 10,
           borderWidth: 1,
           borderColor: C.border,
         },
         receiptBtnText: { color: C.accent, fontSize: 14, fontWeight: "600" },
+        receiptDeleteBtn: {
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 4,
+          paddingHorizontal: 12,
+          paddingVertical: 10,
+        },
         receiptPreview: {
           width: "100%",
           height: 200,
@@ -333,6 +405,16 @@ export default function AddExpenseScreen() {
     );
   };
 
+  // ─── Time auto-format (HH:MM) ───
+  const handleTimeChange = (raw: string) => {
+    const digits = raw.replace(/[^0-9]/g, "").slice(0, 4);
+    if (digits.length <= 2) {
+      setTime(digits);
+    } else {
+      setTime(`${digits.slice(0, 2)}:${digits.slice(2)}`);
+    }
+  };
+
   // ─── Camera ───
   const handleTakePhoto = async () => {
     if (!cameraPermission?.granted) {
@@ -365,6 +447,23 @@ export default function AddExpenseScreen() {
     } catch (err) {
       Alert.alert("사진 촬영 실패");
       setShowCamera(false);
+    }
+  };
+
+  // ─── Gallery picker ───
+  const handlePickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"] as any,
+      base64: true,
+      quality: 0.6,
+    });
+    if (!result.canceled && result.assets[0]?.base64) {
+      const sizeBytes = (result.assets[0].base64.length * 3) / 4;
+      if (sizeBytes > 5 * 1024 * 1024) {
+        toast("영수증 사진이 5MB를 초과합니다", "error");
+        return;
+      }
+      setReceiptImage(`data:image/jpeg;base64,${result.assets[0].base64}`);
     }
   };
 
@@ -401,6 +500,8 @@ export default function AddExpenseScreen() {
       return;
     }
 
+    const finalName = buildExpenseName(category, name, time);
+
     setSaving(true);
     try {
       const splitAmountsObj: Record<string, number> | null =
@@ -413,7 +514,7 @@ export default function AddExpenseScreen() {
 
       if (isEdit && existingExpense) {
         await db.editExpense(tourId, existingExpense.id, {
-          name: name.trim(),
+          name: finalName,
           amount: amountNum,
           currency,
           exchangeRate: rateNum,
@@ -426,7 +527,7 @@ export default function AddExpenseScreen() {
       } else {
         await db.addExpense({
           tourId,
-          name: name.trim(),
+          name: finalName,
           amount: amountNum,
           currency,
           exchangeRate: rateNum,
@@ -487,14 +588,50 @@ export default function AddExpenseScreen() {
         </View>
 
         <ScrollView style={styles.body} contentContainerStyle={{ paddingBottom: 40 }}>
+          {/* 카테고리 */}
+          <Text style={styles.label}>카테고리</Text>
+          <View style={styles.categoryRow}>
+            {CATEGORIES.map((cat) => {
+              const active = category === cat.label;
+              return (
+                <TouchableOpacity
+                  key={cat.label}
+                  style={[styles.categoryChip, active && styles.categoryChipActive]}
+                  onPress={() => setCategory(cat.label)}
+                >
+                  <Ionicons
+                    name={cat.icon}
+                    size={14}
+                    color={active ? "#fff" : C.muted}
+                  />
+                  <Text style={[styles.categoryChipText, active && styles.categoryChipTextActive]}>
+                    {cat.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
           {/* 비용명 */}
           <Text style={styles.label}>비용명</Text>
           <TextInput
             style={styles.input}
             value={name}
             onChangeText={setName}
-            placeholder="예: 숙소, 보트비, 식비"
+            placeholder="예: 보트비, 조식, 민박"
             placeholderTextColor={C.muted}
+          />
+
+          {/* 시간 */}
+          <Text style={styles.label}>시간 (선택)</Text>
+          <TextInput
+            style={styles.input}
+            value={time}
+            onChangeText={handleTimeChange}
+            placeholder="예: 14:30"
+            placeholderTextColor={C.muted}
+            keyboardType="numeric"
+            maxLength={5}
           />
 
           {/* 금액 */}
@@ -699,13 +836,17 @@ export default function AddExpenseScreen() {
           <Text style={styles.label}>영수증</Text>
           <View style={styles.receiptRow}>
             <TouchableOpacity style={styles.receiptBtn} onPress={handleTakePhoto}>
-              <Text style={styles.receiptBtnText}>
-                {receiptImage ? "다시 촬영" : "사진 촬영"}
-              </Text>
+              <Ionicons name="camera" size={16} color={C.accent} />
+              <Text style={styles.receiptBtnText}>촬영</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.receiptBtn} onPress={handlePickImage}>
+              <Ionicons name="images" size={16} color={C.accent} />
+              <Text style={styles.receiptBtnText}>불러오기</Text>
             </TouchableOpacity>
             {receiptImage && (
-              <TouchableOpacity onPress={() => setReceiptImage(undefined)}>
-                <Text style={[styles.receiptBtnText, { color: C.red, marginLeft: 12 }]}>삭제</Text>
+              <TouchableOpacity style={styles.receiptDeleteBtn} onPress={() => setReceiptImage(undefined)}>
+                <Ionicons name="close-circle" size={18} color={C.red} />
+                <Text style={[styles.receiptBtnText, { color: C.red }]}>삭제</Text>
               </TouchableOpacity>
             )}
           </View>
