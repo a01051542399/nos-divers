@@ -18,11 +18,12 @@
       "bundleIdentifier": "com.nosdivers.app",
       "infoPlist": {
         "NSCameraUsageDescription": "영수증 촬영을 위해 카메라 접근이 필요합니다",
-        "NSPhotoLibraryUsageDescription": "영수증 사진을 선택하기 위해 사진 라이브러리 접근이 필요합니다"
+        "NSPhotoLibraryUsageDescription": "영수증 사진을 선택하기 위해 사진 라이브러리 접근이 필요합니다",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
-      "package": "com.nosdivers.app",
+      "package": "app.nosdivers",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0A1628"
