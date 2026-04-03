@@ -63,6 +63,14 @@ export default function SettingsScreen() {
             <Text style={styles.menuText}>화면 모드</Text>
             <Text style={styles.menuValue}>{cycleModeLabel} ›</Text>
           </TouchableOpacity>
+          <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate("HiddenTours")}>
+            <Text style={styles.menuText}>숨긴 투어</Text>
+            <Text style={styles.menuValue}>›</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate("Trash")}>
+            <Text style={styles.menuText}>임시보관함</Text>
+            <Text style={styles.menuValue}>›</Text>
+          </TouchableOpacity>
           <TouchableOpacity style={styles.menuItem}>
             <Text style={styles.menuText}>관리자 모드</Text>
           </TouchableOpacity>

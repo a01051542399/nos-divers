@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
+import * as db from "./src/lib/supabase-store";
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -21,6 +22,8 @@ import TourDetailScreen from "./src/screens/TourDetailScreen";
 import SettingsScreen from "./src/screens/SettingsScreen";
 import AddExpenseScreen from "./src/screens/AddExpenseScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
+import HiddenToursScreen from "./src/screens/HiddenToursScreen";
+import TrashScreen from "./src/screens/TrashScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -85,6 +88,8 @@ function SettingsStack() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="SettingsMain" component={SettingsScreen} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
+      <Stack.Screen name="HiddenTours" component={HiddenToursScreen} />
+      <Stack.Screen name="Trash" component={TrashScreen} />
     </Stack.Navigator>
   );
 }
@@ -129,6 +134,12 @@ function MainTabs() {
 
 function AppContent() {
   const { user, loading } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      db.cleanupTrash().catch(() => {});
+    }
+  }, [user]);
 
   if (loading) {
     return (
