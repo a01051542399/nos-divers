@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useAuth } from "../lib/AuthContext";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function LoginScreen() {
   const navigation = useNavigation<any>();
@@ -103,11 +104,17 @@ export default function LoginScreen() {
           </View>
 
           <TouchableOpacity style={styles.kakaoButton} onPress={signInWithKakao}>
-            <Text style={styles.kakaoButtonText}>카카오로 로그인</Text>
+            <View style={styles.oauthButtonInner}>
+              <Ionicons name="chatbubble" size={20} color="#191919" />
+              <Text style={styles.kakaoButtonText}>카카오로 로그인</Text>
+            </View>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.googleButton} onPress={signInWithGoogle}>
-            <Text style={styles.googleButtonText}>Google로 로그인</Text>
+            <View style={styles.oauthButtonInner}>
+              <Ionicons name="logo-google" size={20} color="#4285F4" />
+              <Text style={styles.googleButtonText}>Google로 로그인</Text>
+            </View>
           </TouchableOpacity>
         </View>
       </View>
@@ -212,6 +219,11 @@ const styles = StyleSheet.create({
     marginHorizontal: 12,
     color: "#3D7A94",
     fontSize: 14,
+  },
+  oauthButtonInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   kakaoButton: {
     backgroundColor: "#FEE500",

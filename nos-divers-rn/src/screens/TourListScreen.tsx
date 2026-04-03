@@ -13,6 +13,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
@@ -342,6 +343,12 @@ export default function TourListScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
+      {/* Logo */}
+      <Image
+        source={require("../../assets/logo-full-official.png")}
+        style={{ width: 180, height: 50, resizeMode: "contain", alignSelf: "center", marginTop: 4, marginBottom: 8 }}
+      />
+
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>다이빙 투어</Text>

@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
@@ -147,8 +148,16 @@ export default function SettingsScreen() {
       <Text style={styles.title}>설정</Text>
       <ScrollView style={styles.scroll}>
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>NoS Divers</Text>
-          <Text style={styles.cardSubtitle}>SINCE 2019 DIVING TEAM</Text>
+          <View style={styles.appInfoRow}>
+            <Image
+              source={require("../../assets/logo-dolphin-official.png")}
+              style={{ width: 52, height: 52, borderRadius: 12 }}
+            />
+            <View style={styles.appInfoText}>
+              <Text style={styles.cardTitle}>NoS Divers</Text>
+              <Text style={styles.cardSubtitle}>SINCE 2019 DIVING TEAM</Text>
+            </View>
+          </View>
           <Text style={styles.cardDesc}>
             다이빙 투어 비용 정산과 면책동의서 서명을 간편하게 관리하세요.
           </Text>
@@ -369,6 +378,15 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 4,
   },
+  appInfoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    marginBottom: 10,
+  },
+  appInfoText: {
+    flex: 1,
+  },
   cardTitle: {
     fontSize: 18,
     fontWeight: "bold",
@@ -377,7 +395,6 @@ const styles = StyleSheet.create({
   cardSubtitle: {
     fontSize: 11,
     color: "#3D7A94",
-    marginBottom: 8,
   },
   cardDesc: {
     fontSize: 13,
