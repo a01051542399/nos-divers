@@ -268,6 +268,12 @@ export default function TourListScreen() {
     }
   };
 
+  // ─── 숨긴 투어 필터 ───
+
+  const visibleTours = tours.filter(
+    (t) => !(settings?.hiddenTourIds ?? []).includes(t.id)
+  );
+
   // ─── 투어 카드 렌더링 ───
 
   const renderTourCard = ({ item }: { item: Tour }) => (
@@ -363,12 +369,12 @@ export default function TourListScreen() {
         </View>
       ) : (
         <FlatList
-          data={tours}
+          data={visibleTours}
           keyExtractor={(item) => String(item.id)}
           renderItem={renderTourCard}
           ListEmptyComponent={renderEmpty}
           contentContainerStyle={
-            tours.length === 0 ? styles.emptyContainer : styles.listContent
+            visibleTours.length === 0 ? styles.emptyContainer : styles.listContent
           }
           refreshControl={
             <RefreshControl

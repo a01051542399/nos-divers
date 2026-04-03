@@ -1,6 +1,10 @@
 {
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
-    "strict": true
+    "strict": true,
+    "baseUrl": ".",
+    "paths": {
+      "@expo/vector-icons": ["./types/@expo/vector-icons/index.d.ts"]
+    }
   }
 }

@@ -24,6 +24,7 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import * as db from "../lib/supabase-store";
 import { formatKRW } from "../store";
 import type { Participant, Expense } from "../types";
+import { useToast } from "../components/Toast";
 
 // ─── Colors ───
 const C = {
@@ -50,6 +51,7 @@ const CURRENCIES = [
 export default function AddExpenseScreen() {
   const route = useRoute<any>();
   const navigation = useNavigation();
+  const { toast } = useToast();
 
   const tourId: number = route.params?.tourId;
   const participants: Participant[] = route.params?.participants ?? [];
@@ -159,6 +161,12 @@ export default function AddExpenseScreen() {
         quality: 0.6,
       });
       if (photo?.base64) {
+        const sizeBytes = (photo.base64.length * 3) / 4;
+        if (sizeBytes > 5 * 1024 * 1024) {
+          toast("영수증 사진이 5MB를 초과합니다", "error");
+          setShowCamera(false);
+          return;
+        }
         setReceiptImage(`data:image/jpeg;base64,${photo.base64}`);
       }
       setShowCamera(false);

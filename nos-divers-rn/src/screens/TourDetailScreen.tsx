@@ -29,22 +29,7 @@ import PinModal from "../components/PinModal";
 import { useToast } from "../components/Toast";
 import { exportSettlementPDF } from "../utils/export-pdf";
 import { exportSettlementExcel } from "../utils/export-excel";
-
-// ─── Colors (다크 테마) ───
-
-const C = {
-  bg: "#0D1117",
-  card: "#161B22",
-  border: "#30363D",
-  text: "#E6EDF3",
-  muted: "#8B949E",
-  accent: "#58A6FF",
-  green: "#3FB950",
-  red: "#F85149",
-  orange: "#D29922",
-  tabActive: "#58A6FF",
-  tabInactive: "#8B949E",
-};
+import { useTheme } from "../components/ThemeContext";
 
 type Tab = "participants" | "expenses" | "settlement";
 
@@ -54,8 +39,26 @@ type ExpensePinAction = "expenseEdit" | "expenseDelete" | null;
 export default function TourDetailScreen() {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
+  const { colors } = useTheme();
+  const C = {
+    bg: colors.bg,
+    card: colors.card,
+    border: colors.border,
+    text: colors.text,
+    muted: colors.muted,
+    accent: colors.primary,
+    green: colors.success,
+    red: colors.error,
+    orange: colors.warning,
+    tabActive: colors.primary,
+    tabInactive: colors.muted,
+  };
   const tourId = route.params?.tourId as number;
   const onBack = () => navigation.goBack();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const styles = useMemo(() => makeStyles(C), [colors]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const editStyles = useMemo(() => makeEditStyles(C), [colors]);
   const { tour, loading, refresh } = useTourDetail(tourId);
   const {
     comments,
@@ -924,9 +927,14 @@ export default function TourDetailScreen() {
   );
 }
 
-// ─── Styles ───
+// ─── Styles helper ───
 
-const styles = StyleSheet.create({
+function makeStyles(C: {
+  bg: string; card: string; border: string; text: string; muted: string;
+  accent: string; green: string; red: string; orange: string;
+  tabActive: string; tabInactive: string;
+}) {
+  return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: C.bg,
@@ -1322,10 +1330,13 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 });
+}
 
-// ─── EditTourModal 스타일 ───
-
-const editStyles = StyleSheet.create({
+function makeEditStyles(C: {
+  bg: string; card: string; border: string; text: string; muted: string;
+  accent: string;
+}) {
+  return StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.6)",
@@ -1396,3 +1407,4 @@ const editStyles = StyleSheet.create({
     opacity: 0.5,
   },
 });
+}
