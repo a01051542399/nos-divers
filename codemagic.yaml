@@ -65,7 +65,11 @@ workflows:
         script: |
           cd ios/App
           LATEST_BUILD=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_CONNECT_APP_ID" || echo 0)
-          agvtool new-version -all $(($LATEST_BUILD + 1))
+          NEW_BUILD=$(($LATEST_BUILD + 1))
+          # Ensure build number is always higher than any failed upload
+          if [ "$NEW_BUILD" -le 5 ]; then NEW_BUILD=6; fi
+          echo "Setting build number to $NEW_BUILD"
+          agvtool new-version -all $NEW_BUILD
 
       - name: Build IPA
         script: |
