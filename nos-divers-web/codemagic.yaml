@@ -7,12 +7,9 @@ workflows:
     integrations:
       app_store_connect: Codemagic
     environment:
-      node: 20
+      node: 22
       xcode: 16.2
       cocoapods: default
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.nosdivers.app
       vars:
         BUNDLE_ID: "com.nosdivers.app"
         APP_STORE_CONNECT_APP_ID: "6761408084"
