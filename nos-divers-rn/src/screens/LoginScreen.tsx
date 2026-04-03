@@ -11,9 +11,11 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 import { useAuth } from "../lib/AuthContext";
 
 export default function LoginScreen() {
+  const navigation = useNavigation<any>();
   const { signInWithEmail, signInWithKakao, signInWithGoogle } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -66,6 +68,14 @@ export default function LoginScreen() {
             secureTextEntry
           />
 
+          {/* Forgot password link */}
+          <TouchableOpacity
+            style={styles.forgotPassword}
+            onPress={() => navigation.navigate("PasswordReset")}
+          >
+            <Text style={styles.forgotPasswordText}>비밀번호를 잊으셨나요?</Text>
+          </TouchableOpacity>
+
           <TouchableOpacity
             style={styles.loginButton}
             onPress={handleEmailLogin}
@@ -78,6 +88,14 @@ export default function LoginScreen() {
             )}
           </TouchableOpacity>
 
+          {/* Sign up link */}
+          <View style={styles.signupRow}>
+            <Text style={styles.signupText}>계정이 없으신가요? </Text>
+            <TouchableOpacity onPress={() => navigation.navigate("Signup")}>
+              <Text style={styles.signupLink}>회원가입</Text>
+            </TouchableOpacity>
+          </View>
+
           <View style={styles.divider}>
             <View style={styles.dividerLine} />
             <Text style={styles.dividerText}>또는</Text>
@@ -85,11 +103,11 @@ export default function LoginScreen() {
           </View>
 
           <TouchableOpacity style={styles.kakaoButton} onPress={signInWithKakao}>
-            <Text style={styles.kakaoButtonText}>💬 카카오로 로그인</Text>
+            <Text style={styles.kakaoButtonText}>카카오로 로그인</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.googleButton} onPress={signInWithGoogle}>
-            <Text style={styles.googleButtonText}>G  Google로 로그인</Text>
+            <Text style={styles.googleButtonText}>Google로 로그인</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -143,17 +161,42 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#C8DFE8",
   },
+  forgotPassword: {
+    alignSelf: "flex-end",
+    marginBottom: 16,
+    marginTop: -8,
+  },
+  forgotPasswordText: {
+    color: "#2196F3",
+    fontSize: 13,
+    fontWeight: "500",
+  },
   loginButton: {
     backgroundColor: "#2196F3",
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 16,
   },
   loginButtonText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "bold",
+  },
+  signupRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  signupText: {
+    color: "#3D7A94",
+    fontSize: 14,
+  },
+  signupLink: {
+    color: "#2196F3",
+    fontSize: 14,
+    fontWeight: "600",
   },
   divider: {
     flexDirection: "row",
@@ -178,7 +221,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   kakaoButtonText: {
-    color: "#000",
+    color: "#191919",
     fontSize: 16,
     fontWeight: "600",
   },

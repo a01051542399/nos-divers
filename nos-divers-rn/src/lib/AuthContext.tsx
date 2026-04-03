@@ -9,7 +9,8 @@ interface AuthState {
   session: Session | null;
   loading: boolean;
   signInWithEmail: (email: string, password: string) => Promise<{ error: string | null }>;
-  signUpWithEmail: (email: string, password: string, name: string) => Promise<{ error: string | null }>;
+  signUpWithEmail: (email: string, password: string, name: string) => Promise<string | null>;
+  resetPassword: (email: string) => Promise<string | null>;
   signInWithKakao: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -20,7 +21,8 @@ const AuthContext = createContext<AuthState>({
   session: null,
   loading: true,
   signInWithEmail: async () => ({ error: null }),
-  signUpWithEmail: async () => ({ error: null }),
+  signUpWithEmail: async () => null,
+  resetPassword: async () => null,
   signInWithKakao: async () => {},
   signInWithGoogle: async () => {},
   signOut: async () => {},
@@ -91,14 +93,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: null };
   }, []);
 
-  const signUpWithEmail = useCallback(async (email: string, password: string, name: string) => {
+  const signUpWithEmail = useCallback(async (email: string, password: string, name: string): Promise<string | null> => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { full_name: name } },
     });
-    if (error) return { error: error.message };
-    return { error: null };
+    if (error) return error.message;
+    return null;
+  }, []);
+
+  const resetPassword = useCallback(async (email: string): Promise<string | null> => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    if (error) return error.message;
+    return null;
   }, []);
 
   const signInWithKakao = useCallback(() => handleOAuth("kakao"), []);
@@ -109,7 +117,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signInWithEmail, signUpWithEmail, signInWithKakao, signInWithGoogle, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, signInWithEmail, signUpWithEmail, resetPassword, signInWithKakao, signInWithGoogle, signOut }}>
       {children}
     </AuthContext.Provider>
   );

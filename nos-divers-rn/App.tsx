@@ -10,6 +10,8 @@ import { ToastProvider } from "./src/components/Toast";
 import { ThemeProvider } from "./src/components/ThemeContext";
 
 import LoginScreen from "./src/screens/LoginScreen";
+import SignupScreen from "./src/screens/SignupScreen";
+import PasswordResetScreen from "./src/screens/PasswordResetScreen";
 import TourListScreen from "./src/screens/TourListScreen";
 import CreateTourScreen from "./src/screens/CreateTourScreen";
 import JoinTourScreen from "./src/screens/JoinTourScreen";
@@ -22,6 +24,24 @@ import ProfileScreen from "./src/screens/ProfileScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
+
+function AuthStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen
+        name="Signup"
+        component={SignupScreen}
+        options={{ animation: "slide_from_right" }}
+      />
+      <Stack.Screen
+        name="PasswordReset"
+        component={PasswordResetScreen}
+        options={{ animation: "slide_from_right" }}
+      />
+    </Stack.Navigator>
+  );
+}
 
 function ToursStack() {
   return (
@@ -119,7 +139,7 @@ function AppContent() {
   }
 
   if (!user) {
-    return <LoginScreen />;
+    return <AuthStack />;
   }
 
   return <MainTabs />;
