@@ -27,6 +27,8 @@ import type { Expense } from "../types";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import PinModal from "../components/PinModal";
 import { useToast } from "../components/Toast";
+import { exportSettlementPDF } from "../utils/export-pdf";
+import { exportSettlementExcel } from "../utils/export-excel";
 
 // ─── Colors (다크 테마) ───
 
@@ -725,6 +727,36 @@ export default function TourDetailScreen() {
           })}
         </>
       )}
+
+      {/* 내보내기 버튼 */}
+      {tour.expenses.length > 0 && (
+        <View style={styles.exportRow}>
+          <TouchableOpacity
+            style={[styles.exportBtn, { backgroundColor: "#C62828" }]}
+            onPress={async () => {
+              try {
+                await exportSettlementPDF(tour, settlements);
+              } catch (e: any) {
+                toast(e?.message || "PDF 내보내기 실패", "error");
+              }
+            }}
+          >
+            <Text style={styles.exportBtnText}>PDF 내보내기</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.exportBtn, { backgroundColor: "#1B5E20" }]}
+            onPress={async () => {
+              try {
+                await exportSettlementExcel(tour, settlements);
+              } catch (e: any) {
+                toast(e?.message || "Excel 내보내기 실패", "error");
+              }
+            }}
+          >
+            <Text style={styles.exportBtnText}>Excel 내보내기</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </ScrollView>
   );
 
@@ -1101,6 +1133,25 @@ const styles = StyleSheet.create({
   },
   settlementAmount: {
     fontSize: 16,
+    fontWeight: "700",
+  },
+
+  // Export buttons
+  exportRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 24,
+    marginBottom: 8,
+  },
+  exportBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  exportBtnText: {
+    color: "#fff",
+    fontSize: 14,
     fontWeight: "700",
   },
 
