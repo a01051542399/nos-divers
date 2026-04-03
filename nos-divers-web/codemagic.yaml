@@ -34,7 +34,12 @@ workflows:
       - name: Sync Capacitor iOS
         script: |
           npx cap sync ios
-          # Resolve SPM dependencies and build with automatic signing first
+          # Ensure SPM core version matches installed plugins (8.0.1)
+          CORE_VERSION=$(node -e "console.log(require('@capacitor/core/package.json').version)")
+          echo "Capacitor core version: $CORE_VERSION"
+          sed -i '' "s/exact: \"[0-9]*\.[0-9]*\.[0-9]*\"/exact: \"$CORE_VERSION\"/" ios/App/CapApp-SPM/Package.swift
+          cat ios/App/CapApp-SPM/Package.swift | grep exact
+          # Resolve SPM dependencies
           cd ios/App
           xcodebuild -project App.xcodeproj -scheme App -resolvePackageDependencies
 
