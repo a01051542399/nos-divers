@@ -29,3 +29,4 @@ frames2/
 !nos-divers-web/public/*.png
 !nos-divers-v45/assets/**/*.png
 !nos-divers-web/ios/App/App/Assets.xcassets/**/*.png
+!nos-divers-rn/assets/*.png
