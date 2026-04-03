@@ -76,8 +76,8 @@ workflows:
             --config "Release"
 
     artifacts:
-      - nos-divers-web/ios/App/build/ios/ipa/*.ipa
-      - nos-divers-web/ios/App/*.xcarchive/**
+      - ios/App/build/ios/ipa/*.ipa
+      - ios/App/build/ios/xcarchive/*.xcarchive/**
       - /tmp/xcodebuild_logs/*.log
 
     publishing:
@@ -91,4 +91,4 @@ workflows:
         auth: integration
         submit_to_testflight: true
         beta_groups:
-          - Internal Testing
+          - NoS Divers Testers
