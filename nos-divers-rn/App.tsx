@@ -2,16 +2,40 @@ import React from "react";
 import { ActivityIndicator, View } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { AuthProvider, useAuth } from "./src/lib/AuthContext";
 
 import LoginScreen from "./src/screens/LoginScreen";
 import TourListScreen from "./src/screens/TourListScreen";
+import CreateTourScreen from "./src/screens/CreateTourScreen";
+import JoinTourScreen from "./src/screens/JoinTourScreen";
 import WaiversScreen from "./src/screens/WaiversScreen";
+import TourDetailScreen from "./src/screens/TourDetailScreen";
 import SettingsScreen from "./src/screens/SettingsScreen";
 
 const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
+
+function ToursStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="TourList" component={TourListScreen} />
+      <Stack.Screen name="TourDetail" component={TourDetailScreen} />
+      <Stack.Screen
+        name="CreateTour"
+        component={CreateTourScreen}
+        options={{ presentation: "modal", animation: "slide_from_bottom" }}
+      />
+      <Stack.Screen
+        name="JoinTour"
+        component={JoinTourScreen}
+        options={{ presentation: "modal", animation: "slide_from_bottom" }}
+      />
+    </Stack.Navigator>
+  );
+}
 
 function MainTabs() {
   return (
@@ -34,7 +58,7 @@ function MainTabs() {
     >
       <Tab.Screen
         name="Tours"
-        component={TourListScreen}
+        component={ToursStack}
         options={{ tabBarLabel: "투어", tabBarIcon: () => null }}
       />
       <Tab.Screen
