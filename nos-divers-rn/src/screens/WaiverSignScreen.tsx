@@ -10,13 +10,11 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  PanResponder,
-  LayoutChangeEvent,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRoute, useNavigation } from "@react-navigation/native";
-import Svg, { Path } from "react-native-svg";
-import { captureRef } from "react-native-view-shot";
+import { WebView } from "react-native-webview";
+import type { WebViewMessageEvent } from "react-native-webview";
 import type { WaiverPersonalInfo } from "../types";
 import * as db from "../lib/supabase-store";
 import type { UserProfile } from "../lib/supabase-store";
@@ -104,36 +102,42 @@ export default function WaiverSignScreen() {
   const [healthOther, setHealthOther] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
-  // Step 2: Canvas Signature
-  const [paths, setPaths] = useState<string[]>([]);
-  const [currentPath, setCurrentPath] = useState<string>("");
-  const signatureRef = useRef<View>(null);
-  const [canvasWidth, setCanvasWidth] = useState(300);
+  // Step 2: Canvas Signature via WebView
+  const [hasSignature, setHasSignature] = useState(false);
+  const [signatureBase64, setSignatureBase64] = useState<string>("");
+  const webViewRef = useRef<WebView>(null);
 
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: (evt) => {
-        const { locationX, locationY } = evt.nativeEvent;
-        setCurrentPath(`M ${locationX.toFixed(1)},${locationY.toFixed(1)}`);
-      },
-      onPanResponderMove: (evt) => {
-        const { locationX, locationY } = evt.nativeEvent;
-        setCurrentPath((prev) =>
-          prev + ` L ${locationX.toFixed(1)},${locationY.toFixed(1)}`
-        );
-      },
-      onPanResponderRelease: () => {
-        setCurrentPath((prev) => {
-          if (prev) {
-            setPaths((ps) => [...ps, prev]);
-          }
-          return "";
-        });
-      },
-    })
-  ).current;
+  const signatureHTML = `
+<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#fff;overflow:hidden}
+canvas{display:block;width:100%;height:200px;touch-action:none}</style></head><body>
+<canvas id="c"></canvas>
+<script>
+var c=document.getElementById('c'),ctx=c.getContext('2d'),drawing=false,hasStrokes=false;
+c.width=c.offsetWidth*2;c.height=c.offsetHeight*2;ctx.scale(2,2);
+ctx.lineWidth=2.5;ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#023E58';
+function pos(e){var t=e.touches?e.touches[0]:e,r=c.getBoundingClientRect();
+return{x:t.clientX-r.left,y:t.clientY-r.top}}
+c.addEventListener('touchstart',function(e){e.preventDefault();drawing=true;var p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y)});
+c.addEventListener('touchmove',function(e){e.preventDefault();if(!drawing)return;var p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke();hasStrokes=true;
+window.ReactNativeWebView.postMessage(JSON.stringify({type:'drawing',hasStrokes:true}))});
+c.addEventListener('touchend',function(e){e.preventDefault();drawing=false});
+window.clear=function(){ctx.clearRect(0,0,c.width,c.height);hasStrokes=false;
+window.ReactNativeWebView.postMessage(JSON.stringify({type:'drawing',hasStrokes:false}))};
+window.getImage=function(){if(!hasStrokes){window.ReactNativeWebView.postMessage(JSON.stringify({type:'image',data:''}));return}
+window.ReactNativeWebView.postMessage(JSON.stringify({type:'image',data:c.toDataURL('image/png')}))};
+</script></body></html>`;
+
+  const handleWebViewMessage = useCallback((event: WebViewMessageEvent) => {
+    try {
+      const msg = JSON.parse(event.nativeEvent.data);
+      if (msg.type === 'drawing') {
+        setHasSignature(msg.hasStrokes);
+      } else if (msg.type === 'image') {
+        setSignatureBase64(msg.data);
+      }
+    } catch {}
+  }, []);
 
   // Load tour + profile on mount
   useEffect(() => {
@@ -211,10 +215,15 @@ export default function WaiverSignScreen() {
   };
 
   const handleSubmit = async () => {
-    if (paths.length === 0) {
+    if (!hasSignature) {
       Alert.alert("서명 필요", "서명란에 직접 서명해주세요.");
       return;
     }
+
+    // Request image from WebView
+    webViewRef.current?.injectJavaScript("window.getImage();true;");
+    // Wait a moment for the message
+    await new Promise(r => setTimeout(r, 300));
 
     setSubmitting(true);
     try {
@@ -232,21 +241,8 @@ export default function WaiverSignScreen() {
         return;
       }
 
-      // Capture the SVG canvas as base64 PNG
-      let signatureImage =
+      const signatureImage = signatureBase64 ||
         "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
-      try {
-        if (signatureRef.current) {
-          const uri = await captureRef(signatureRef, {
-            format: "png",
-            quality: 1,
-            result: "base64",
-          });
-          signatureImage = `data:image/png;base64,${uri}`;
-        }
-      } catch {
-        // If capture fails, proceed with placeholder
-      }
 
       // Save profile for future auto-fill
       await db.setProfile({
@@ -498,46 +494,20 @@ export default function WaiverSignScreen() {
                 아래 서명란에 손가락으로 직접 서명해주세요
               </Text>
 
-              {/* Signature canvas */}
-              <View
-                style={styles.signatureBox}
-                onLayout={(e: LayoutChangeEvent) =>
-                  setCanvasWidth(e.nativeEvent.layout.width)
-                }
-              >
-                <View
-                  ref={signatureRef}
-                  style={styles.signatureCanvas}
-                  {...panResponder.panHandlers}
-                >
-                  <Svg
-                    height={200}
-                    width={canvasWidth > 0 ? canvasWidth : "100%"}
-                  >
-                    {paths.map((d, i) => (
-                      <Path
-                        key={i}
-                        d={d}
-                        stroke="#023E58"
-                        strokeWidth={2.5}
-                        fill="none"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    ))}
-                    {currentPath ? (
-                      <Path
-                        d={currentPath}
-                        stroke="#023E58"
-                        strokeWidth={2.5}
-                        fill="none"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    ) : null}
-                  </Svg>
-                  {paths.length === 0 && !currentPath && (
-                    <Text style={styles.signaturePlaceholder}>
+              {/* Signature canvas via WebView */}
+              <View style={styles.signatureBox}>
+                <View style={styles.signatureCanvas}>
+                  <WebView
+                    ref={webViewRef}
+                    source={{ html: signatureHTML }}
+                    style={{ height: 200, backgroundColor: '#fff' }}
+                    scrollEnabled={false}
+                    bounces={false}
+                    onMessage={handleWebViewMessage}
+                    javaScriptEnabled
+                  />
+                  {!hasSignature && (
+                    <Text style={[styles.signaturePlaceholder, { position: 'absolute', top: 85, left: 0, right: 0 }]}>
                       여기에 서명하세요
                     </Text>
                   )}
@@ -547,8 +517,9 @@ export default function WaiverSignScreen() {
                 <TouchableOpacity
                   style={styles.clearBtn}
                   onPress={() => {
-                    setPaths([]);
-                    setCurrentPath("");
+                    webViewRef.current?.injectJavaScript("window.clear();true;");
+                    setHasSignature(false);
+                    setSignatureBase64("");
                   }}
                 >
                   <Text style={styles.clearBtnText}>지우기</Text>
@@ -576,7 +547,7 @@ export default function WaiverSignScreen() {
                   style={[
                     styles.primaryBtn,
                     { flex: 2 },
-                    paths.length > 0
+                    hasSignature
                       ? { backgroundColor: "#4CAF50" }
                       : { backgroundColor: "#999" },
                   ]}
