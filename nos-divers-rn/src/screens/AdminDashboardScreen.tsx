@@ -331,7 +331,7 @@ function WaiversTab() {
             <Text style={styles.itemName}>{item.signerName}</Text>
             <Text style={styles.itemMeta}>투어 ID: {item.tourId}</Text>
             <Text style={styles.itemMeta}>
-              서명일: {item.signedAt ? formatDate(item.signedAt) : "-"}
+              서명일: {item.signedAt ? formatDate(String(item.signedAt)) : "-"}
             </Text>
           </View>
           <TouchableOpacity
