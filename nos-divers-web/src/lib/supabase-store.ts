@@ -205,6 +205,32 @@ export async function restoreTour(tourId: number): Promise<void> {
 }
 
 export async function deleteTour(tourId: number): Promise<void> {
+  // Storage 파일 정리 (best-effort: 실패해도 DB 삭제는 진행)
+  const storageFolders = [
+    `receipts/${tourId}`,
+    `signatures/${tourId}`,
+  ];
+
+  for (const folder of storageFolders) {
+    try {
+      const { data: files, error: listError } = await supabase.storage
+        .from("images")
+        .list(folder);
+
+      if (!listError && files && files.length > 0) {
+        const paths = files.map((f) => `${folder}/${f.name}`);
+        const { error: removeError } = await supabase.storage
+          .from("images")
+          .remove(paths);
+        if (removeError) {
+          console.warn(`Storage 삭제 실패 (${folder}):`, removeError.message);
+        }
+      }
+    } catch (e) {
+      console.warn(`Storage 정리 중 오류 (${folder}):`, e);
+    }
+  }
+
   // Cascade delete handles participants, expenses, waivers, comments
   const { error } = await supabase
     .from("tours")
