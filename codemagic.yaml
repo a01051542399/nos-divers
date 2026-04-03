@@ -13,7 +13,7 @@ workflows:
       vars:
         BUNDLE_ID: "com.nosdivers.app"
         APP_STORE_CONNECT_APP_ID: "6761408084"
-        XCODE_PROJECT: "ios/App/App.xcodeproj"
+        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
     triggering:
       events:
@@ -42,7 +42,7 @@ workflows:
             --type IOS_APP_STORE \
             --create
           keychain add-certificates
-          xcode-project use-profiles --project "$XCODE_PROJECT"
+          xcode-project use-profiles
 
       - name: Increment build number
         script: |
@@ -54,7 +54,7 @@ workflows:
         script: |
           cd ios/App
           xcode-project build-ipa \
-            --project "App.xcodeproj" \
+            --workspace "App.xcworkspace" \
             --scheme "$XCODE_SCHEME" \
             --config "Release"
 
