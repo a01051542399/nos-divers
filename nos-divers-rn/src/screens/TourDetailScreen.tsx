@@ -19,7 +19,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { useTourDetail, useComments } from "../hooks/useSupabase";
+import { useTourDetail, useComments, useProfile, useWaivers } from "../hooks/useSupabase";
 import { calculateSettlement, formatKRW, formatDate } from "../store";
 import * as db from "../lib/supabase-store";
 import type { Expense } from "../types";
@@ -59,6 +59,8 @@ export default function TourDetailScreen() {
     addComment,
     removeComment,
   } = useComments(tourId);
+  const { profile } = useProfile();
+  const { waivers } = useWaivers(tourId);
   const { toast, confirm } = useToast();
 
   const [activeTab, setActiveTab] = useState<Tab>("participants");
@@ -133,10 +135,14 @@ export default function TourDetailScreen() {
   const handleSendComment = async () => {
     const text = commentText.trim();
     if (!text) return;
+    const authorName = profile?.name?.trim() || "";
+    if (!authorName) {
+      Alert.alert("알림", "설정에서 이름을 등록한 후 댓글을 작성할 수 있습니다");
+      return;
+    }
     setSendingComment(true);
     try {
-      // TODO: 실제 사용자 이름으로 교체
-      await addComment("나", text);
+      await addComment(authorName, text);
       setCommentText("");
     } catch {
       Alert.alert("오류", "댓글 작성에 실패했습니다");
@@ -320,22 +326,37 @@ export default function TourDetailScreen() {
           아직 참여자가 없습니다
         </Text>
       ) : (
-        tour.participants.map((p) => (
-          <View key={p.id} style={styles.listItem}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.itemTitle}>{p.name}</Text>
-              {p.addedBy && (
-                <Text style={styles.itemSub}>추가: {p.addedBy}</Text>
-              )}
+        tour.participants.map((p) => {
+          const hasSigned = waivers.some(
+            (w) => w.signerName === p.name,
+          );
+          return (
+            <View key={p.id} style={styles.listItem}>
+              <View
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: 4,
+                  backgroundColor: hasSigned ? "#4CAF50" : "#F85149",
+                  marginRight: 10,
+                  flexShrink: 0,
+                }}
+              />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.itemTitle}>{p.name}</Text>
+                {p.addedBy && (
+                  <Text style={styles.itemSub}>추가: {p.addedBy}</Text>
+                )}
+              </View>
+              <TouchableOpacity
+                onPress={() => handleRemoveParticipant(p.id, p.name)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Text style={{ color: C.red, fontSize: 14 }}>삭제</Text>
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity
-              onPress={() => handleRemoveParticipant(p.id, p.name)}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Text style={{ color: C.red, fontSize: 14 }}>삭제</Text>
-            </TouchableOpacity>
-          </View>
-        ))
+          );
+        })
       )}
 
       {/* 댓글 영역 */}
@@ -363,29 +384,35 @@ export default function TourDetailScreen() {
         )}
 
         {/* 댓글 입력 */}
-        <View style={styles.commentInputRow}>
-          <TextInput
-            style={styles.commentInput}
-            placeholder="댓글을 입력하세요"
-            placeholderTextColor={C.muted}
-            value={commentText}
-            onChangeText={setCommentText}
-            multiline
-          />
-          <TouchableOpacity
-            style={[
-              styles.commentSendBtn,
-              (!commentText.trim() || sendingComment) &&
-                styles.addBtnDisabled,
-            ]}
-            onPress={handleSendComment}
-            disabled={!commentText.trim() || sendingComment}
-          >
-            <Text style={styles.addBtnText}>
-              {sendingComment ? "..." : "전송"}
-            </Text>
-          </TouchableOpacity>
-        </View>
+        {!profile?.name?.trim() ? (
+          <Text style={[styles.mutedText, { marginBottom: 16, fontSize: 13 }]}>
+            설정에서 이름을 등록하면 댓글을 작성할 수 있습니다
+          </Text>
+        ) : (
+          <View style={styles.commentInputRow}>
+            <TextInput
+              style={styles.commentInput}
+              placeholder="댓글을 입력하세요"
+              placeholderTextColor={C.muted}
+              value={commentText}
+              onChangeText={setCommentText}
+              multiline
+            />
+            <TouchableOpacity
+              style={[
+                styles.commentSendBtn,
+                (!commentText.trim() || sendingComment) &&
+                  styles.addBtnDisabled,
+              ]}
+              onPress={handleSendComment}
+              disabled={!commentText.trim() || sendingComment}
+            >
+              <Text style={styles.addBtnText}>
+                {sendingComment ? "..." : "전송"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     </ScrollView>
   );
