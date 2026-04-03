@@ -1,0 +1,80 @@
+workflows:
+  ios-release:
+    name: iOS Release (Capacitor)
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    working_directory: nos-divers-web
+    integrations:
+      app_store_connect: Codemagic
+    environment:
+      node: 20
+      xcode: 16.2
+      cocoapods: default
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.nosdivers.app
+      vars:
+        BUNDLE_ID: "com.nosdivers.app"
+        APP_STORE_CONNECT_APP_ID: "6761408084"
+        XCODE_PROJECT: "ios/App/App.xcodeproj"
+        XCODE_SCHEME: "App"
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+          source: true
+    scripts:
+      - name: Install Node dependencies
+        script: |
+          npm ci
+
+      - name: Build web assets
+        script: |
+          npm run build
+
+      - name: Sync Capacitor iOS
+        script: |
+          npx cap sync ios
+
+      - name: Set up code signing
+        script: |
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+          keychain add-certificates
+          xcode-project use-profiles --project "$XCODE_PROJECT"
+
+      - name: Increment build number
+        script: |
+          cd ios/App
+          LATEST_BUILD=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_CONNECT_APP_ID" || echo 0)
+          agvtool new-version -all $(($LATEST_BUILD + 1))
+
+      - name: Build IPA
+        script: |
+          cd ios/App
+          xcode-project build-ipa \
+            --project "App.xcodeproj" \
+            --scheme "$XCODE_SCHEME" \
+            --config "Release"
+
+    artifacts:
+      - nos-divers-web/ios/App/build/ios/ipa/*.ipa
+      - nos-divers-web/ios/App/*.xarchive/**
+      - /tmp/xcodebuild_logs/*.log
+
+    publishing:
+      email:
+        recipients:
+          - a01051542399@gmail.com
+        notify:
+          success: true
+          failure: true
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        beta_groups:
+          - Internal Testing
