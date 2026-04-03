@@ -8,7 +8,7 @@ workflows:
       app_store_connect: Codemagic
     environment:
       node: 22
-      xcode: 16.0
+      xcode: 16.2
       groups:
         - code_signing
       vars:
@@ -34,6 +34,9 @@ workflows:
       - name: Sync Capacitor iOS
         script: |
           npx cap sync ios
+          # Resolve SPM dependencies and build with automatic signing first
+          cd ios/App
+          xcodebuild -project App.xcodeproj -scheme App -resolvePackageDependencies
 
       - name: Set up keychain
         script: |
