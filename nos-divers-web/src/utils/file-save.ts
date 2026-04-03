@@ -1,11 +1,10 @@
 import { isNative } from "../lib/platform";
 import { Filesystem, Directory } from "@capacitor/filesystem";
-import { Share } from "@capacitor/share";
 
 /**
  * Save a file and share/download it.
  * - Web: triggers browser download
- * - Native: writes to device filesystem then opens share sheet
+ * - Native: writes to device filesystem then opens share sheet via web API
  */
 export async function saveFile(
   filename: string,
@@ -27,10 +26,20 @@ export async function saveFile(
       directory: Directory.Cache,
     });
 
-    await Share.share({
-      title: filename,
-      url: result.uri,
-    });
+    // Use Web Share API instead of @capacitor/share
+    if (navigator.share) {
+      try {
+        const response = await fetch(result.uri);
+        const blob = await response.blob();
+        const file = new File([blob], filename, { type: mimeType });
+        await navigator.share({ title: filename, files: [file] });
+      } catch {
+        // Fallback: just open the URI
+        window.open(result.uri, "_blank");
+      }
+    } else {
+      window.open(result.uri, "_blank");
+    }
   } else {
     // Web: trigger browser download
     const blob = data instanceof Blob ? data : base64ToBlob(data, mimeType);
