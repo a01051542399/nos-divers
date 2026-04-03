@@ -2,7 +2,7 @@
  * 투어 상세 화면
  * 3개 탭: 참여자 / 비용 / 정산
  */
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import {
   ActivityIndicator,
   Alert,
   Clipboard,
+  Share,
   Modal,
   KeyboardAvoidingView,
   Platform,
@@ -72,6 +73,9 @@ export default function TourDetailScreen() {
   const [addingParticipant, setAddingParticipant] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [sendingComment, setSendingComment] = useState(false);
+
+  // 댓글 자동 스크롤
+  const commentScrollRef = useRef<ScrollView>(null);
 
   // 댓글 수정
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
@@ -162,6 +166,7 @@ export default function TourDetailScreen() {
     try {
       await addComment(authorName, text);
       setCommentText("");
+      setTimeout(() => commentScrollRef.current?.scrollToEnd?.({ animated: true }), 300);
     } catch {
       Alert.alert("오류", "댓글 작성에 실패했습니다");
     } finally {
@@ -202,6 +207,33 @@ export default function TourDetailScreen() {
     if (!tour) return;
     Clipboard.setString(tour.inviteCode);
     Alert.alert("복사됨", "초대코드가 클립보드에 복사되었습니다");
+  };
+
+  const handleShareInviteCode = async () => {
+    if (!tour) return;
+    try {
+      await Share.share({
+        message: `NoS Divers 투어에 참여하세요!\n\n투어: ${tour.name}\n날짜: ${tour.date}\n장소: ${tour.location || ""}\n\n초대코드: ${tour.inviteCode}`,
+      });
+    } catch {}
+  };
+
+  // ─── 날짜 포맷 헬퍼 ───
+
+  const formatSingleDate = (d: string) => {
+    if (d.length === 6) {
+      return `${d.slice(0, 2)}.${d.slice(2, 4)}.${d.slice(4, 6)}`;
+    }
+    return d;
+  };
+
+  const formatTourDate = (date: string) => {
+    if (!date) return "-";
+    if (date.includes("~")) {
+      const [start, end] = date.split("~").map((d) => d.trim());
+      return `${formatSingleDate(start)} ~ ${formatSingleDate(end)}`;
+    }
+    return formatSingleDate(date);
   };
 
   // ─── 더보기 메뉴 ───
@@ -388,6 +420,7 @@ export default function TourDetailScreen() {
 
   const renderParticipantsTab = () => (
     <ScrollView
+      ref={commentScrollRef}
       style={styles.tabContent}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
@@ -894,7 +927,7 @@ export default function TourDetailScreen() {
       <View style={styles.infoCard}>
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>날짜</Text>
-          <Text style={styles.infoValue}>{formatDate(tour.date) || tour.date}</Text>
+          <Text style={styles.infoValue}>{formatTourDate(tour.date)}</Text>
         </View>
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>장소</Text>
@@ -902,11 +935,15 @@ export default function TourDetailScreen() {
         </View>
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>초대코드</Text>
-          <TouchableOpacity onPress={handleCopyInviteCode}>
-            <Text style={[styles.infoValue, { color: C.accent }]}>
-              {tour.inviteCode} (복사)
-            </Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+            <Text style={[styles.infoValue, { color: C.text }]}>{tour.inviteCode}</Text>
+            <TouchableOpacity onPress={handleCopyInviteCode}>
+              <Text style={[styles.infoValue, { color: C.accent }]}>복사</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleShareInviteCode}>
+              <Text style={[styles.infoValue, { color: C.accent }]}>공유</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 

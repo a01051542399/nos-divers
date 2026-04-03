@@ -170,6 +170,22 @@ export default function TourListScreen() {
     return amount.toLocaleString("ko-KR") + "원";
   };
 
+  const formatSingleDate = (d: string) => {
+    if (d.length === 6) {
+      return `${d.slice(0, 2)}.${d.slice(2, 4)}.${d.slice(4, 6)}`;
+    }
+    return d;
+  };
+
+  const formatTourDate = (date: string) => {
+    if (!date) return "";
+    if (date.includes("~")) {
+      const [start, end] = date.split("~").map((d) => d.trim());
+      return `${formatSingleDate(start)} ~ ${formatSingleDate(end)}`;
+    }
+    return formatSingleDate(date);
+  };
+
   // ─── 더보기 메뉴 ───
 
   const handleMorePress = (tour: Tour) => {
@@ -298,7 +314,7 @@ export default function TourListScreen() {
 
       <View style={styles.cardMeta}>
         {item.date ? (
-          <Text style={styles.cardMetaText}>{item.date}</Text>
+          <Text style={styles.cardMetaText}>{formatTourDate(item.date)}</Text>
         ) : null}
         {item.location ? (
           <Text style={styles.cardMetaText}>

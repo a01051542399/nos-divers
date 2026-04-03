@@ -7,11 +7,13 @@ import {
   FlatList,
   RefreshControl,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import type { Tour, Waiver } from "../types";
 import * as db from "../lib/supabase-store";
+import { exportAllWaiversPDF } from "../utils/export-waiver-pdf";
 
 export default function WaiversScreen() {
   const navigation = useNavigation<any>();
@@ -23,6 +25,7 @@ export default function WaiversScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedTourId, setSelectedTourId] = useState<number | null>(null);
   const [profile, setProfile] = useState<{ name: string }>({ name: "" });
+  const [exportingPDF, setExportingPDF] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -86,12 +89,34 @@ export default function WaiversScreen() {
       <SafeAreaView style={styles.container} edges={["top"]}>
         {/* Header */}
         <View style={styles.detailHeader}>
-          <TouchableOpacity
-            onPress={() => setSelectedTourId(null)}
-            style={styles.backBtn}
-          >
-            <Text style={styles.backBtnText}>{"<"} 뒤로</Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <TouchableOpacity
+              onPress={() => setSelectedTourId(null)}
+              style={styles.backBtn}
+            >
+              <Text style={styles.backBtnText}>{"<"} 뒤로</Text>
+            </TouchableOpacity>
+            {waivers.length > 0 && (
+              <TouchableOpacity
+                style={[styles.pdfBtn, exportingPDF && { opacity: 0.5 }]}
+                disabled={exportingPDF}
+                onPress={async () => {
+                  setExportingPDF(true);
+                  try {
+                    await exportAllWaiversPDF(waivers, tour.name);
+                  } catch (e: any) {
+                    Alert.alert("오류", e?.message || "PDF 내보내기 실패");
+                  } finally {
+                    setExportingPDF(false);
+                  }
+                }}
+              >
+                <Text style={styles.pdfBtnText}>
+                  {exportingPDF ? "내보내는 중..." : "전체 PDF"}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
           <Text style={styles.detailTitle}>{tour.name}</Text>
           <Text style={styles.detailSub}>
             {formatDate(tour.date)} · {tour.location || ""}
@@ -321,6 +346,17 @@ const styles = StyleSheet.create({
   backBtnText: {
     fontSize: 14,
     color: "#2196F3",
+    fontWeight: "600",
+  },
+  pdfBtn: {
+    backgroundColor: "#C62828",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  pdfBtnText: {
+    color: "#fff",
+    fontSize: 12,
     fontWeight: "600",
   },
   detailTitle: {
