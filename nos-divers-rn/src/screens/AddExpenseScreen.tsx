@@ -22,7 +22,7 @@ import {
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import * as ImagePicker from "expo-image-picker";
+// expo-image-picker loaded dynamically to avoid Metro bundling issues on Windows
 import { Ionicons } from "@expo/vector-icons";
 import * as db from "../lib/supabase-store";
 import { formatKRW } from "../store";
@@ -450,20 +450,25 @@ export default function AddExpenseScreen() {
     }
   };
 
-  // ─── Gallery picker ───
+  // ─── Gallery picker (dynamic import to avoid Metro bundling issue) ───
   const handlePickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"] as any,
-      base64: true,
-      quality: 0.6,
-    });
-    if (!result.canceled && result.assets[0]?.base64) {
-      const sizeBytes = (result.assets[0].base64.length * 3) / 4;
-      if (sizeBytes > 5 * 1024 * 1024) {
-        toast("영수증 사진이 5MB를 초과합니다", "error");
-        return;
+    try {
+      const ImagePicker = await import("expo-image-picker");
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"] as any,
+        base64: true,
+        quality: 0.6,
+      });
+      if (!result.canceled && result.assets[0]?.base64) {
+        const sizeBytes = (result.assets[0].base64.length * 3) / 4;
+        if (sizeBytes > 5 * 1024 * 1024) {
+          toast("영수증 사진이 5MB를 초과합니다", "error");
+          return;
+        }
+        setReceiptImage(`data:image/jpeg;base64,${result.assets[0].base64}`);
       }
-      setReceiptImage(`data:image/jpeg;base64,${result.assets[0].base64}`);
+    } catch {
+      Alert.alert("갤러리를 열 수 없습니다");
     }
   };
 
