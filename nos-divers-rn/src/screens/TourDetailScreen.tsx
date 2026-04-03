@@ -2,7 +2,7 @@
  * 투어 상세 화면
  * 3개 탭: 참여자 / 비용 / 정산
  */
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   View,
   Text,
@@ -15,12 +15,17 @@ import {
   ActivityIndicator,
   Alert,
   Clipboard,
+  Modal,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { useTourDetail, useComments } from "../hooks/useSupabase";
 import { calculateSettlement, formatKRW, formatDate } from "../store";
 import * as db from "../lib/supabase-store";
 import type { Expense } from "../types";
 import { useRoute, useNavigation } from "@react-navigation/native";
+import PinModal from "../components/PinModal";
+import { useToast } from "../components/Toast";
 
 // ─── Colors (다크 테마) ───
 
@@ -40,9 +45,11 @@ const C = {
 
 type Tab = "participants" | "expenses" | "settlement";
 
+type PinAction = "edit" | "delete" | null;
+
 export default function TourDetailScreen() {
   const route = useRoute<any>();
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const tourId = route.params?.tourId as number;
   const onBack = () => navigation.goBack();
   const { tour, loading, refresh } = useTourDetail(tourId);
@@ -52,12 +59,25 @@ export default function TourDetailScreen() {
     addComment,
     removeComment,
   } = useComments(tourId);
+  const { toast, confirm } = useToast();
 
   const [activeTab, setActiveTab] = useState<Tab>("participants");
   const [newParticipantName, setNewParticipantName] = useState("");
   const [addingParticipant, setAddingParticipant] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [sendingComment, setSendingComment] = useState(false);
+
+  // PIN 모달
+  const [pinVisible, setPinVisible] = useState(false);
+  const [pinError, setPinError] = useState<string | undefined>();
+  const [pinAction, setPinAction] = useState<PinAction>(null);
+
+  // 수정 모달
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editDate, setEditDate] = useState("");
+  const [editLocation, setEditLocation] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const settlements = useMemo(
     () => (tour ? calculateSettlement(tour) : []),
@@ -129,6 +149,97 @@ export default function TourDetailScreen() {
     if (!tour) return;
     Clipboard.setString(tour.inviteCode);
     Alert.alert("복사됨", "초대코드가 클립보드에 복사되었습니다");
+  };
+
+  // ─── 더보기 메뉴 ───
+
+  const handleMorePress = () => {
+    Alert.alert("투어 관리", "작업을 선택하세요", [
+      {
+        text: "투어 정보 수정",
+        onPress: () => {
+          setPinAction("edit");
+          setPinError(undefined);
+          setPinVisible(true);
+        },
+      },
+      {
+        text: "투어 삭제",
+        style: "destructive",
+        onPress: () => {
+          setPinAction("delete");
+          setPinError(undefined);
+          setPinVisible(true);
+        },
+      },
+      { text: "취소", style: "cancel" },
+    ]);
+  };
+
+  // ─── PIN 인증 ───
+
+  const handlePinSubmit = async (pin: string) => {
+    if (!tour) return;
+    try {
+      const ok = await db.verifyTourAccessCode(tour.id, pin);
+      if (!ok) {
+        setPinError("PIN이 일치하지 않습니다");
+        return;
+      }
+      setPinVisible(false);
+      setPinError(undefined);
+
+      if (pinAction === "edit") {
+        setEditName(tour.name);
+        setEditDate(tour.date || "");
+        setEditLocation(tour.location || "");
+        setEditModalVisible(true);
+      } else if (pinAction === "delete") {
+        handleDeleteTour();
+      }
+    } catch (e: any) {
+      setPinError(e.message || "오류가 발생했습니다");
+    }
+  };
+
+  // ─── 투어 삭제 ───
+
+  const handleDeleteTour = async () => {
+    if (!tour) return;
+    const confirmed = await confirm(`"${tour.name}" 투어를 삭제하시겠습니까?\n임시보관함에서 7일간 복원 가능합니다.`);
+    if (!confirmed) return;
+    try {
+      await db.softDeleteTour(tour.id);
+      toast("투어가 삭제되었습니다", "success");
+      navigation.goBack();
+    } catch (e: any) {
+      toast(e.message || "삭제에 실패했습니다", "error");
+    }
+  };
+
+  // ─── 투어 수정 저장 ───
+
+  const handleEditSave = async () => {
+    if (!tour) return;
+    if (!editName.trim()) {
+      Alert.alert("오류", "투어 이름을 입력해주세요");
+      return;
+    }
+    setSaving(true);
+    try {
+      await db.editTour(tour.id, {
+        name: editName.trim(),
+        date: editDate.trim(),
+        location: editLocation.trim(),
+      });
+      toast("투어가 수정되었습니다", "success");
+      setEditModalVisible(false);
+      await refresh();
+    } catch (e: any) {
+      toast(e.message || "수정에 실패했습니다", "error");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const getParticipantName = (pid: number) =>
@@ -438,7 +549,13 @@ export default function TourDetailScreen() {
         <Text style={styles.headerTitle} numberOfLines={1}>
           {tour.name}
         </Text>
-        <View style={{ width: 50 }} />
+        <TouchableOpacity
+          onPress={handleMorePress}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          style={styles.headerMoreBtn}
+        >
+          <Text style={styles.headerMoreText}>···</Text>
+        </TouchableOpacity>
       </View>
 
       {/* 투어 정보 카드 */}
@@ -494,6 +611,80 @@ export default function TourDetailScreen() {
       {activeTab === "participants" && renderParticipantsTab()}
       {activeTab === "expenses" && renderExpensesTab()}
       {activeTab === "settlement" && renderSettlementTab()}
+
+      {/* PIN 모달 */}
+      <PinModal
+        visible={pinVisible}
+        title={pinAction === "edit" ? "수정 PIN 입력" : "삭제 PIN 입력"}
+        onSubmit={handlePinSubmit}
+        onCancel={() => {
+          setPinVisible(false);
+          setPinError(undefined);
+        }}
+        error={pinError}
+      />
+
+      {/* 투어 수정 모달 */}
+      <Modal
+        visible={editModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setEditModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={editStyles.overlay}
+        >
+          <View style={editStyles.card}>
+            <Text style={editStyles.title}>투어 수정</Text>
+
+            <Text style={editStyles.label}>투어 이름 *</Text>
+            <TextInput
+              style={editStyles.input}
+              value={editName}
+              onChangeText={setEditName}
+              placeholder="투어 이름"
+              placeholderTextColor={C.muted}
+            />
+
+            <Text style={editStyles.label}>날짜 (YYMMDD)</Text>
+            <TextInput
+              style={editStyles.input}
+              value={editDate}
+              onChangeText={setEditDate}
+              placeholder="예: 250315"
+              placeholderTextColor={C.muted}
+              keyboardType="numeric"
+              maxLength={6}
+            />
+
+            <Text style={editStyles.label}>장소</Text>
+            <TextInput
+              style={editStyles.input}
+              value={editLocation}
+              onChangeText={setEditLocation}
+              placeholder="예: 제주도"
+              placeholderTextColor={C.muted}
+            />
+
+            <View style={editStyles.buttons}>
+              <TouchableOpacity
+                style={editStyles.cancelBtn}
+                onPress={() => setEditModalVisible(false)}
+              >
+                <Text style={editStyles.cancelText}>취소</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[editStyles.saveBtn, saving && editStyles.btnDisabled]}
+                onPress={handleEditSave}
+                disabled={saving}
+              >
+                <Text style={editStyles.saveText}>{saving ? "저장 중..." : "저장"}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -531,6 +722,17 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     flex: 1,
     textAlign: "center",
+  },
+  headerMoreBtn: {
+    paddingLeft: 8,
+    paddingVertical: 2,
+    minWidth: 50,
+    alignItems: "flex-end",
+  },
+  headerMoreText: {
+    color: C.muted,
+    fontSize: 18,
+    letterSpacing: 1,
   },
 
   // Info card
@@ -773,5 +975,79 @@ const styles = StyleSheet.create({
   backBtnText: {
     color: "#fff",
     fontWeight: "700",
+  },
+});
+
+// ─── EditTourModal 스타일 ───
+
+const editStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "flex-end",
+  },
+  card: {
+    backgroundColor: C.card,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 24,
+    paddingBottom: 40,
+    borderTopWidth: 1,
+    borderTopColor: C.border,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: C.text,
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  label: {
+    fontSize: 13,
+    color: C.muted,
+    marginBottom: 6,
+    marginTop: 12,
+  },
+  input: {
+    backgroundColor: C.bg,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: C.border,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: C.text,
+  },
+  buttons: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 24,
+  },
+  cancelBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: C.border,
+    alignItems: "center",
+  },
+  cancelText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: C.muted,
+  },
+  saveBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: C.accent,
+    alignItems: "center",
+  },
+  saveText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#fff",
+  },
+  btnDisabled: {
+    opacity: 0.5,
   },
 });
