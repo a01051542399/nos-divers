@@ -105,6 +105,7 @@ export default function WaiverSignScreen() {
   // Step 2: Canvas Signature via WebView
   const [hasSignature, setHasSignature] = useState(false);
   const [signatureBase64, setSignatureBase64] = useState<string>("");
+  const [isDrawing, setIsDrawing] = useState(false);
   const webViewRef = useRef<WebView>(null);
 
   const signatureHTML = `
@@ -118,10 +119,12 @@ c.width=c.offsetWidth*2;c.height=c.offsetHeight*2;ctx.scale(2,2);
 ctx.lineWidth=2.5;ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#023E58';
 function pos(e){var t=e.touches?e.touches[0]:e,r=c.getBoundingClientRect();
 return{x:t.clientX-r.left,y:t.clientY-r.top}}
-c.addEventListener('touchstart',function(e){e.preventDefault();drawing=true;var p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y)});
+c.addEventListener('touchstart',function(e){e.preventDefault();drawing=true;var p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);
+window.ReactNativeWebView.postMessage(JSON.stringify({type:'touchstart'}))});
 c.addEventListener('touchmove',function(e){e.preventDefault();if(!drawing)return;var p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke();hasStrokes=true;
 window.ReactNativeWebView.postMessage(JSON.stringify({type:'drawing',hasStrokes:true}))});
-c.addEventListener('touchend',function(e){e.preventDefault();drawing=false});
+c.addEventListener('touchend',function(e){e.preventDefault();drawing=false;
+window.ReactNativeWebView.postMessage(JSON.stringify({type:'touchend'}))});
 window.clear=function(){ctx.clearRect(0,0,c.width,c.height);hasStrokes=false;
 window.ReactNativeWebView.postMessage(JSON.stringify({type:'drawing',hasStrokes:false}))};
 window.getImage=function(){if(!hasStrokes){window.ReactNativeWebView.postMessage(JSON.stringify({type:'image',data:''}));return}
@@ -131,7 +134,11 @@ window.ReactNativeWebView.postMessage(JSON.stringify({type:'image',data:c.toData
   const handleWebViewMessage = useCallback((event: WebViewMessageEvent) => {
     try {
       const msg = JSON.parse(event.nativeEvent.data);
-      if (msg.type === 'drawing') {
+      if (msg.type === 'touchstart') {
+        setIsDrawing(true);
+      } else if (msg.type === 'touchend') {
+        setIsDrawing(false);
+      } else if (msg.type === 'drawing') {
         setHasSignature(msg.hasStrokes);
       } else if (msg.type === 'image') {
         setSignatureBase64(msg.data);
@@ -318,6 +325,7 @@ window.ReactNativeWebView.postMessage(JSON.stringify({type:'image',data:c.toData
           style={{ flex: 1 }}
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
+          scrollEnabled={!isDrawing}
         >
           {/* ── Step 0: Personal Info ── */}
           {step === 0 && (
@@ -503,6 +511,8 @@ window.ReactNativeWebView.postMessage(JSON.stringify({type:'image',data:c.toData
                     style={{ height: 200, backgroundColor: '#fff' }}
                     scrollEnabled={false}
                     bounces={false}
+                    overScrollMode="never"
+                    nestedScrollEnabled={false}
                     onMessage={handleWebViewMessage}
                     javaScriptEnabled
                   />
