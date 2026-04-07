@@ -424,7 +424,7 @@ export default function TourDetailScreen() {
       style={styles.tabContent}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
-      contentContainerStyle={{ paddingBottom: 120 }}
+      contentContainerStyle={{ paddingBottom: 200 }}
     >
       {/* 참여자 추가 */}
       <View style={styles.addRow}>
@@ -599,6 +599,9 @@ export default function TourDetailScreen() {
               value={commentText}
               onChangeText={setCommentText}
               multiline
+              onFocus={() => {
+                setTimeout(() => commentScrollRef.current?.scrollToEnd({ animated: true }), 300);
+              }}
             />
             <TouchableOpacity
               style={[

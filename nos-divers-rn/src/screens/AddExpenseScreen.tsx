@@ -96,7 +96,11 @@ export default function AddExpenseScreen() {
   // ─── Form state ───
   const [category, setCategory] = useState(parsed.category);
   const [name, setName] = useState(parsed.baseName);
-  const [time, setTime] = useState(parsed.time);
+  const [time, setTime] = useState(() => {
+    if (parsed.time) return parsed.time;  // editing existing expense
+    const now = new Date();
+    return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  });
   const [amount, setAmount] = useState(existingExpense ? String(existingExpense.amount) : "");
   const [currency, setCurrency] = useState(existingExpense?.currency ?? "KRW");
   const [exchangeRate, setExchangeRate] = useState(
@@ -623,7 +627,7 @@ export default function AddExpenseScreen() {
             style={styles.input}
             value={name}
             onChangeText={setName}
-            placeholder="예: 보트비, 조식, 민박"
+            placeholder="예: 펀다이빙, 조식, 숙박"
             placeholderTextColor={C.muted}
           />
 
