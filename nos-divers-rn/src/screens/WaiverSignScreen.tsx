@@ -108,7 +108,6 @@ export default function WaiverSignScreen() {
   // Step 2: Canvas Signature via WebView
   const [hasSignature, setHasSignature] = useState(false);
   const [signatureBase64, setSignatureBase64] = useState<string>("");
-  const [isDrawing, setIsDrawing] = useState(false);
   const webViewRef = useRef<WebView>(null);
 
   const signatureHTML = `
@@ -137,11 +136,7 @@ window.ReactNativeWebView.postMessage(JSON.stringify({type:'image',data:c.toData
   const handleWebViewMessage = useCallback((event: WebViewMessageEvent) => {
     try {
       const msg = JSON.parse(event.nativeEvent.data);
-      if (msg.type === 'touchstart') {
-        setIsDrawing(true);
-      } else if (msg.type === 'touchend') {
-        setIsDrawing(false);
-      } else if (msg.type === 'drawing') {
+      if (msg.type === 'drawing') {
         setHasSignature(msg.hasStrokes);
       } else if (msg.type === 'image') {
         setSignatureBase64(msg.data);
@@ -341,258 +336,257 @@ window.ReactNativeWebView.postMessage(JSON.stringify({type:'image',data:c.toData
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <ScrollView
-          ref={scrollRef}
-          style={{ flex: 1 }}
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-          scrollEnabled={step !== 2}
-        >
-          {/* ── Step 0: Personal Info ── */}
-          {step === 0 && (
-            <View>
-              <Text style={styles.stepTitle}>1. 기본 정보</Text>
-              <Text style={styles.stepDesc}>
-                모든 항목을 빠짐없이 입력해주세요
-              </Text>
+        {step !== 2 ? (
+          <ScrollView
+            ref={scrollRef}
+            style={{ flex: 1 }}
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+          >
+            {/* ── Step 0: Personal Info ── */}
+            {step === 0 && (
+              <View>
+                <Text style={styles.stepTitle}>1. 기본 정보</Text>
+                <Text style={styles.stepDesc}>
+                  모든 항목을 빠짐없이 입력해주세요
+                </Text>
 
-              {PERSONAL_FIELDS.map((field) => {
-                const isEmpty =
-                  showErrors && !personalInfo[field.key].trim();
-                return (
-                  <View key={field.key} style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>
-                      {field.label}{" "}
-                      <Text style={{ color: "#F44336" }}>*</Text>
-                    </Text>
-                    <TextInput
-                      style={[
-                        styles.input,
-                        isEmpty && {
-                          borderColor: "#F44336",
-                          borderWidth: 2,
-                        },
-                      ]}
-                      value={personalInfo[field.key]}
-                      onChangeText={(text) =>
-                        setPersonalInfo((prev) => ({
-                          ...prev,
-                          [field.key]: formatValue(field.key, text),
-                        }))
-                      }
-                      placeholder={field.placeholder}
-                      placeholderTextColor="#A0B4BE"
-                      keyboardType={field.keyboardType || "default"}
-                    />
-                    {isEmpty && (
-                      <Text style={styles.errorText}>
-                        필수 입력 항목입니다
+                {PERSONAL_FIELDS.map((field) => {
+                  const isEmpty =
+                    showErrors && !personalInfo[field.key].trim();
+                  return (
+                    <View key={field.key} style={styles.inputGroup}>
+                      <Text style={styles.inputLabel}>
+                        {field.label}{" "}
+                        <Text style={{ color: "#F44336" }}>*</Text>
                       </Text>
-                    )}
-                  </View>
-                );
-              })}
-
-              <TouchableOpacity
-                style={styles.primaryBtn}
-                onPress={handleStep0Next}
-              >
-                <Text style={styles.primaryBtnText}>
-                  다음: 동의서 내용 확인
-                </Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {/* ── Step 1: Waiver Content + Health Checklist ── */}
-          {step === 1 && (
-            <View>
-              {/* Waiver header */}
-              <View style={styles.waiverHeaderBox}>
-                <Text style={styles.waiverTitle}>{WAIVER_TITLE}</Text>
-                <Text style={styles.waiverIntro}>{WAIVER_INTRO}</Text>
-              </View>
-
-              {/* Sections */}
-              {WAIVER_SECTIONS.map((section, i) => (
-                <View key={i} style={styles.waiverSection}>
-                  <Text style={styles.sectionTitle}>{section.title}</Text>
-                  <Text style={styles.sectionContent}>{section.content}</Text>
-                </View>
-              ))}
-
-              {/* Health checklist */}
-              <View style={styles.waiverSection}>
-                <Text style={styles.sectionTitle}>
-                  건강 상태 확인 (해당 사항 체크)
-                </Text>
-                {HEALTH_CHECKLIST.map((item, i) => (
-                  <TouchableOpacity
-                    key={i}
-                    style={styles.checkboxRow}
-                    onPress={() => {
-                      const next = [...healthChecklist];
-                      next[i] = !next[i];
-                      setHealthChecklist(next);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <View
-                      style={[
-                        styles.checkbox,
-                        healthChecklist[i] && styles.checkboxChecked,
-                      ]}
-                    >
-                      {healthChecklist[i] && (
-                        <Text style={styles.checkmark}>{"\u2713"}</Text>
+                      <TextInput
+                        style={[
+                          styles.input,
+                          isEmpty && {
+                            borderColor: "#F44336",
+                            borderWidth: 2,
+                          },
+                        ]}
+                        value={personalInfo[field.key]}
+                        onChangeText={(text) =>
+                          setPersonalInfo((prev) => ({
+                            ...prev,
+                            [field.key]: formatValue(field.key, text),
+                          }))
+                        }
+                        placeholder={field.placeholder}
+                        placeholderTextColor="#A0B4BE"
+                        keyboardType={field.keyboardType || "default"}
+                      />
+                      {isEmpty && (
+                        <Text style={styles.errorText}>
+                          필수 입력 항목입니다
+                        </Text>
                       )}
                     </View>
-                    <Text style={styles.checkboxLabel}>{item}</Text>
-                  </TouchableOpacity>
-                ))}
+                  );
+                })}
 
-                <View style={[styles.inputGroup, { marginTop: 12 }]}>
-                  <Text style={styles.inputLabel}>기타 특이사항</Text>
-                  <TextInput
-                    style={[styles.input, { height: 80, textAlignVertical: "top" }]}
-                    value={healthOther}
-                    onChangeText={setHealthOther}
-                    placeholder="해당 사항이 있으면 기입해주세요"
-                    placeholderTextColor="#A0B4BE"
-                    multiline
-                  />
-                </View>
-              </View>
-
-              {/* Closing */}
-              <View style={styles.closingBox}>
-                <Text style={styles.closingText}>{WAIVER_CLOSING}</Text>
-              </View>
-
-              {/* Agreement checkbox */}
-              <TouchableOpacity
-                style={[
-                  styles.agreeRow,
-                  agreedToTerms && styles.agreeRowChecked,
-                ]}
-                onPress={() => setAgreedToTerms(!agreedToTerms)}
-                activeOpacity={0.7}
-              >
-                <View
-                  style={[
-                    styles.checkbox,
-                    agreedToTerms && styles.checkboxChecked,
-                  ]}
-                >
-                  {agreedToTerms && (
-                    <Text style={styles.checkmark}>{"\u2713"}</Text>
-                  )}
-                </View>
-                <Text style={styles.agreeText}>
-                  위의 모든 내용을 읽고 이해하였으며, 이에 동의합니다.
-                </Text>
-              </TouchableOpacity>
-
-              {/* Nav buttons */}
-              <View style={styles.navRow}>
                 <TouchableOpacity
-                  style={[styles.secondaryBtn, { flex: 1 }]}
-                  onPress={() => setStep(0)}
-                >
-                  <Text style={styles.secondaryBtnText}>이전</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.primaryBtn,
-                    { flex: 2 },
-                    !agreedToTerms && { backgroundColor: "#999" },
-                  ]}
-                  onPress={handleStep1Next}
-                >
-                  <Text style={styles.primaryBtnText}>다음: 서명</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-
-          {/* ── Step 2: Signature ── */}
-          {step === 2 && (
-            <View>
-              <Text style={styles.stepTitle}>3. 서명</Text>
-              <Text style={styles.stepDesc}>
-                아래 서명란에 손가락으로 직접 서명해주세요
-              </Text>
-
-              {/* Signature canvas via WebView */}
-              <View style={styles.signatureBox}>
-                <View style={styles.signatureCanvas}>
-                  <WebView
-                    ref={webViewRef}
-                    source={{ html: signatureHTML }}
-                    style={{ height: 200, backgroundColor: '#fff' }}
-                    scrollEnabled={false}
-                    bounces={false}
-                    overScrollMode="never"
-                    nestedScrollEnabled={false}
-                    onMessage={handleWebViewMessage}
-                    javaScriptEnabled
-                  />
-                  {!hasSignature && (
-                    <Text style={[styles.signaturePlaceholder, { position: 'absolute', top: 85, left: 0, right: 0 }]}>
-                      여기에 서명하세요
-                    </Text>
-                  )}
-                </View>
-
-                {/* Clear button */}
-                <TouchableOpacity
-                  style={styles.clearBtn}
-                  onPress={() => {
-                    webViewRef.current?.injectJavaScript("window.clear();true;");
-                    setHasSignature(false);
-                    setSignatureBase64("");
-                  }}
-                >
-                  <Text style={styles.clearBtnText}>지우기</Text>
-                </TouchableOpacity>
-              </View>
-
-              <View style={{ marginVertical: 12 }}>
-                <Text style={styles.signInfoText}>
-                  서명자: {personalInfo.name}
-                </Text>
-                <Text style={styles.signInfoText}>
-                  작성일: {new Date().toLocaleDateString("ko-KR")}
-                </Text>
-              </View>
-
-              {/* Nav buttons */}
-              <View style={styles.navRow}>
-                <TouchableOpacity
-                  style={[styles.secondaryBtn, { flex: 1 }]}
-                  onPress={() => setStep(1)}
-                >
-                  <Text style={styles.secondaryBtnText}>이전</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.primaryBtn,
-                    { flex: 2 },
-                    hasSignature
-                      ? { backgroundColor: "#4CAF50" }
-                      : { backgroundColor: "#999" },
-                  ]}
-                  onPress={handleSubmit}
-                  disabled={submitting}
+                  style={styles.primaryBtn}
+                  onPress={handleStep0Next}
                 >
                   <Text style={styles.primaryBtnText}>
-                    {submitting ? "제출 중..." : "서명 제출"}
+                    다음: 동의서 내용 확인
                   </Text>
                 </TouchableOpacity>
               </View>
+            )}
+
+            {/* ── Step 1: Waiver Content + Health Checklist ── */}
+            {step === 1 && (
+              <View>
+                {/* Waiver header */}
+                <View style={styles.waiverHeaderBox}>
+                  <Text style={styles.waiverTitle}>{WAIVER_TITLE}</Text>
+                  <Text style={styles.waiverIntro}>{WAIVER_INTRO}</Text>
+                </View>
+
+                {/* Sections */}
+                {WAIVER_SECTIONS.map((section, i) => (
+                  <View key={i} style={styles.waiverSection}>
+                    <Text style={styles.sectionTitle}>{section.title}</Text>
+                    <Text style={styles.sectionContent}>{section.content}</Text>
+                  </View>
+                ))}
+
+                {/* Health checklist */}
+                <View style={styles.waiverSection}>
+                  <Text style={styles.sectionTitle}>
+                    건강 상태 확인 (해당 사항 체크)
+                  </Text>
+                  {HEALTH_CHECKLIST.map((item, i) => (
+                    <TouchableOpacity
+                      key={i}
+                      style={styles.checkboxRow}
+                      onPress={() => {
+                        const next = [...healthChecklist];
+                        next[i] = !next[i];
+                        setHealthChecklist(next);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <View
+                        style={[
+                          styles.checkbox,
+                          healthChecklist[i] && styles.checkboxChecked,
+                        ]}
+                      >
+                        {healthChecklist[i] && (
+                          <Text style={styles.checkmark}>{"\u2713"}</Text>
+                        )}
+                      </View>
+                      <Text style={styles.checkboxLabel}>{item}</Text>
+                    </TouchableOpacity>
+                  ))}
+
+                  <View style={[styles.inputGroup, { marginTop: 12 }]}>
+                    <Text style={styles.inputLabel}>기타 특이사항</Text>
+                    <TextInput
+                      style={[styles.input, { height: 80, textAlignVertical: "top" }]}
+                      value={healthOther}
+                      onChangeText={setHealthOther}
+                      placeholder="해당 사항이 있으면 기입해주세요"
+                      placeholderTextColor="#A0B4BE"
+                      multiline
+                    />
+                  </View>
+                </View>
+
+                {/* Closing */}
+                <View style={styles.closingBox}>
+                  <Text style={styles.closingText}>{WAIVER_CLOSING}</Text>
+                </View>
+
+                {/* Agreement checkbox */}
+                <TouchableOpacity
+                  style={[
+                    styles.agreeRow,
+                    agreedToTerms && styles.agreeRowChecked,
+                  ]}
+                  onPress={() => setAgreedToTerms(!agreedToTerms)}
+                  activeOpacity={0.7}
+                >
+                  <View
+                    style={[
+                      styles.checkbox,
+                      agreedToTerms && styles.checkboxChecked,
+                    ]}
+                  >
+                    {agreedToTerms && (
+                      <Text style={styles.checkmark}>{"\u2713"}</Text>
+                    )}
+                  </View>
+                  <Text style={styles.agreeText}>
+                    위의 모든 내용을 읽고 이해하였으며, 이에 동의합니다.
+                  </Text>
+                </TouchableOpacity>
+
+                {/* Nav buttons */}
+                <View style={styles.navRow}>
+                  <TouchableOpacity
+                    style={[styles.secondaryBtn, { flex: 1 }]}
+                    onPress={() => setStep(0)}
+                  >
+                    <Text style={styles.secondaryBtnText}>이전</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.primaryBtn,
+                      { flex: 2 },
+                      !agreedToTerms && { backgroundColor: "#999" },
+                    ]}
+                    onPress={handleStep1Next}
+                  >
+                    <Text style={styles.primaryBtnText}>다음: 서명</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+          </ScrollView>
+        ) : (
+          /* ── Step 2: Signature — ScrollView 밖으로 분리 (터치 충돌 방지) ── */
+          <View style={[styles.scrollContent, { flex: 1 }]}>
+            <Text style={styles.stepTitle}>3. 서명</Text>
+            <Text style={styles.stepDesc}>
+              아래 서명란에 손가락으로 직접 서명해주세요
+            </Text>
+
+            {/* Signature canvas via WebView */}
+            <View style={styles.signatureBox}>
+              <View style={styles.signatureCanvas}>
+                <WebView
+                  ref={webViewRef}
+                  source={{ html: signatureHTML }}
+                  style={{ height: 200, backgroundColor: '#fff' }}
+                  scrollEnabled={false}
+                  bounces={false}
+                  overScrollMode="never"
+                  nestedScrollEnabled={false}
+                  onMessage={handleWebViewMessage}
+                  javaScriptEnabled
+                />
+                {!hasSignature && (
+                  <Text style={[styles.signaturePlaceholder, { position: 'absolute', top: 85, left: 0, right: 0 }]}>
+                    여기에 서명하세요
+                  </Text>
+                )}
+              </View>
+
+              {/* Clear button */}
+              <TouchableOpacity
+                style={styles.clearBtn}
+                onPress={() => {
+                  webViewRef.current?.injectJavaScript("window.clear();true;");
+                  setHasSignature(false);
+                  setSignatureBase64("");
+                }}
+              >
+                <Text style={styles.clearBtnText}>지우기</Text>
+              </TouchableOpacity>
             </View>
-          )}
-        </ScrollView>
+
+            <View style={{ marginVertical: 12 }}>
+              <Text style={styles.signInfoText}>
+                서명자: {personalInfo.name}
+              </Text>
+              <Text style={styles.signInfoText}>
+                작성일: {new Date().toLocaleDateString("ko-KR")}
+              </Text>
+            </View>
+
+            {/* Nav buttons */}
+            <View style={styles.navRow}>
+              <TouchableOpacity
+                style={[styles.secondaryBtn, { flex: 1 }]}
+                onPress={() => setStep(1)}
+              >
+                <Text style={styles.secondaryBtnText}>이전</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.primaryBtn,
+                  { flex: 2 },
+                  hasSignature
+                    ? { backgroundColor: "#4CAF50" }
+                    : { backgroundColor: "#999" },
+                ]}
+                onPress={handleSubmit}
+                disabled={submitting}
+              >
+                <Text style={styles.primaryBtnText}>
+                  {submitting ? "제출 중..." : "서명 제출"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
