@@ -84,6 +84,13 @@ export default function TourDetailScreen() {
   // 비용 카드 펼침
   const [expandedExpenseId, setExpandedExpenseId] = useState<number | null>(null);
 
+  // 카테고리 접힘 상태
+  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
+
+  const toggleCategory = (cat: string) => {
+    setCollapsedCategories(prev => ({ ...prev, [cat]: !prev[cat] }));
+  };
+
   // 비용 PIN 모달
   const [expensePinVisible, setExpensePinVisible] = useState(false);
   const [expensePinError, setExpensePinError] = useState<string | undefined>();
@@ -117,6 +124,43 @@ export default function TourDetailScreen() {
         : 0,
     [tour],
   );
+
+  // ─── 카테고리 파싱 & 그룹핑 ───
+
+  const CATEGORY_ORDER = ['다이빙', '숙박', '식비', '기타'];
+
+  const parseExpenseName = (name: string) => {
+    const catMatch = name.match(/^\[(.+?)\]\s*/);
+    const timeMatch = name.match(/\((\d{2}:\d{2})\)\s*$/);
+    return {
+      category: catMatch ? catMatch[1] : '기타',
+      time: timeMatch ? timeMatch[1] : '99:99',
+      displayName: name.replace(/^\[.+?\]\s*/, '').replace(/\s*\(\d{2}:\d{2}\)\s*$/, ''),
+    };
+  };
+
+  const groupedExpenses = useMemo(() => {
+    const groups: Record<string, Expense[]> = {};
+    for (const cat of CATEGORY_ORDER) groups[cat] = [];
+
+    if (!tour) return groups;
+
+    tour.expenses.forEach(exp => {
+      const { category } = parseExpenseName(exp.name);
+      const cat = CATEGORY_ORDER.includes(category) ? category : '기타';
+      groups[cat].push(exp);
+    });
+
+    for (const cat of CATEGORY_ORDER) {
+      groups[cat].sort((a, b) => {
+        const ta = parseExpenseName(a.name).time;
+        const tb = parseExpenseName(b.name).time;
+        return ta.localeCompare(tb);
+      });
+    }
+
+    return groups;
+  }, [tour?.expenses]);
 
   // ─── Handlers ───
 
@@ -648,7 +692,7 @@ export default function TourDetailScreen() {
           activeOpacity={0.7}
         >
           <View style={{ flex: 1 }}>
-            <Text style={styles.itemTitle}>{expense.name}</Text>
+            <Text style={styles.itemTitle}>{parseExpenseName(expense.name).displayName || expense.name}</Text>
             <Text style={styles.itemSub}>
               결제: {getParticipantName(expense.paidBy)} | 분배:{" "}
               {expense.splitAmong.length}명
@@ -778,7 +822,28 @@ export default function TourDetailScreen() {
           아직 비용이 없습니다
         </Text>
       ) : (
-        tour.expenses.map(renderExpenseItem)
+        CATEGORY_ORDER.map(cat => {
+          const items = groupedExpenses[cat];
+          if (!items || items.length === 0) return null;
+          const isCollapsed = collapsedCategories[cat] ?? false;
+          const catTotal = items.reduce((sum, e) => sum + e.amount * (e.exchangeRate || 1), 0);
+          return (
+            <View key={cat} style={styles.categorySection}>
+              <TouchableOpacity
+                style={styles.categoryHeader}
+                onPress={() => toggleCategory(cat)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.categoryHeaderLeft}>
+                  {isCollapsed ? '▶' : '▼'}{'  '}{cat}
+                  <Text style={styles.categoryCount}> ({items.length})</Text>
+                </Text>
+                <Text style={styles.categoryTotal}>{formatKRW(catTotal)}</Text>
+              </TouchableOpacity>
+              {!isCollapsed && items.map(renderExpenseItem)}
+            </View>
+          );
+        })
       )}
     </ScrollView>
   );
@@ -1366,6 +1431,38 @@ function makeStyles(C: {
     borderRadius: 8,
     paddingHorizontal: 14,
     justifyContent: "center",
+  },
+
+  // Category section
+  categorySection: {
+    marginBottom: 8,
+  },
+  categoryHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#D6EAF2",
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: C.border,
+  },
+  categoryHeaderLeft: {
+    color: C.text,
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  categoryCount: {
+    color: C.muted,
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  categoryTotal: {
+    color: C.accent,
+    fontSize: 14,
+    fontWeight: "700",
   },
 
   // Expense card (expandable)
