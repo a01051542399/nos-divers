@@ -28,6 +28,7 @@ import HiddenToursScreen from "./src/screens/HiddenToursScreen";
 import TrashScreen from "./src/screens/TrashScreen";
 import SettingsGuideScreen from "./src/screens/SettingsGuideScreen";
 import AdminDashboardScreen from "./src/screens/AdminDashboardScreen";
+import SettingsDisplayScreen from "./src/screens/SettingsDisplayScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -107,6 +108,11 @@ function SettingsStack() {
       <Stack.Screen
         name="AdminDashboard"
         component={AdminDashboardScreen}
+        options={{ animation: "slide_from_right" }}
+      />
+      <Stack.Screen
+        name="SettingsDisplay"
+        component={SettingsDisplayScreen}
         options={{ animation: "slide_from_right" }}
       />
     </Stack.Navigator>

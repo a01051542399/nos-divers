@@ -315,11 +315,24 @@ export async function addParticipant(
   name: string,
   addedBy?: string,
 ): Promise<Participant> {
+  // 같은 이름의 참여자가 이미 있으면 기존 데이터 반환 (초대 코드로 참여 시 중복 방지)
+  // 참고: joinTour RPC도 서버 측에서 동일한 중복 방지를 처리함
+  const { data: existing } = await supabase
+    .from("participants")
+    .select("*")
+    .eq("tour_id", tourId)
+    .eq("name", name.trim())
+    .maybeSingle();
+
+  if (existing) {
+    return toParticipant(existing);
+  }
+
   const { data, error } = await supabase
     .from("participants")
     .insert({
       tour_id: tourId,
-      name,
+      name: name.trim(),
       added_by: addedBy,
     })
     .select()

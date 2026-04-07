@@ -29,7 +29,7 @@ const THEME_MODES: { value: ThemeMode; label: string }[] = [
 export default function SettingsScreen() {
   const navigation = useNavigation<any>();
   const { user, signOut } = useAuth();
-  const { mode, setMode } = useTheme();
+  const { mode } = useTheme();
   const { settings, refresh: refreshSettings } = useAppSettings();
   const { toast, confirm } = useToast();
 
@@ -45,13 +45,7 @@ export default function SettingsScreen() {
   const [adminPw, setAdminPw] = useState("");
   const [verifyingAdmin, setVerifyingAdmin] = useState(false);
 
-  const cycleModeLabel = THEME_MODES.find((m) => m.value === mode)?.label ?? "시스템";
-
-  const cycleThemeMode = () => {
-    const idx = THEME_MODES.findIndex((m) => m.value === mode);
-    const next = THEME_MODES[(idx + 1) % THEME_MODES.length];
-    setMode(next.value);
-  };
+  const currentModeLabel = THEME_MODES.find((m) => m.value === mode)?.label ?? "시스템";
 
   const handleSignOut = async () => {
     const confirmed = await confirm("정말 로그아웃 하시겠습니까?");
@@ -182,9 +176,9 @@ export default function SettingsScreen() {
 
         <Text style={styles.sectionTitle}>설정</Text>
         <View style={styles.card}>
-          <TouchableOpacity style={styles.menuItem} onPress={cycleThemeMode}>
+          <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate("SettingsDisplay")}>
             <Text style={styles.menuText}>화면 모드</Text>
-            <Text style={styles.menuValue}>{cycleModeLabel} ›</Text>
+            <Text style={styles.menuValue}>{currentModeLabel} ›</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate("HiddenTours")}>
             <Text style={styles.menuText}>숨긴 투어</Text>
