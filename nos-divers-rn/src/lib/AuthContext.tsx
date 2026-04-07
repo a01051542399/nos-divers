@@ -31,7 +31,15 @@ const AuthContext = createContext<AuthState>({
 export const useAuth = () => useContext(AuthContext);
 
 async function handleOAuth(provider: "kakao" | "google") {
-  const redirectTo = makeRedirectUri();
+  // 프로덕션 EAS 빌드에서는 app.nosdivers://callback 스키마를 사용해야 함.
+  // makeRedirectUri()를 파라미터 없이 호출하면 개발 환경에서는 동작하지만
+  // TestFlight/APK 프로덕션 빌드에서는 잘못된 URI가 생성되어 OAuth 실패함.
+  // Supabase Dashboard → Authentication → URL Configuration → Redirect URLs에
+  // app.nosdivers://callback 이 등록되어 있어야 함.
+  const redirectTo = makeRedirectUri({
+    scheme: "app.nosdivers",
+    path: "callback",
+  });
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider,
     options: {
