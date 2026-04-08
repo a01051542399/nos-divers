@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
+import { useTheme } from "../components/ThemeContext";
 import { useTrashTours } from "../hooks/useSupabase";
 import { useToast } from "../components/Toast";
 import * as db from "../lib/supabase-store";
@@ -23,6 +24,7 @@ function getDaysRemaining(deletedAt: string): number {
 
 export default function TrashScreen() {
   const navigation = useNavigation<any>();
+  const { colors } = useTheme();
   const { toast, confirm } = useToast();
   const { tours, loading, refresh } = useTrashTours();
 
@@ -51,31 +53,31 @@ export default function TrashScreen() {
   const renderItem = ({ item }: { item: Tour }) => {
     const daysLeft = getDaysRemaining(item.deletedAt!);
     return (
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: colors.card }]}>
         <View style={styles.cardInfo}>
-          <Text style={styles.tourName}>{item.name}</Text>
-          <Text style={styles.tourMeta}>
+          <Text style={[styles.tourName, { color: colors.text }]}>{item.name}</Text>
+          <Text style={[styles.tourMeta, { color: colors.muted }]}>
             {item.date}
             {item.location ? ` · ${item.location}` : ""}
           </Text>
-          <Text style={[styles.daysLeft, daysLeft <= 1 && styles.daysLeftUrgent]}>
+          <Text style={[styles.daysLeft, daysLeft <= 1 && { color: colors.error }]}>
             {daysLeft}일 후 자동 삭제
           </Text>
         </View>
         <View style={styles.buttonGroup}>
           <TouchableOpacity
-            style={styles.restoreButton}
+            style={[styles.restoreButton, { backgroundColor: colors.primary }]}
             onPress={() => handleRestore(item)}
             activeOpacity={0.75}
           >
             <Text style={styles.restoreButtonText}>복원</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.deleteButton}
+            style={[styles.deleteButton, { backgroundColor: colors.error + "20", borderColor: colors.error }]}
             onPress={() => handleDelete(item)}
             activeOpacity={0.75}
           >
-            <Text style={styles.deleteButtonText}>영구 삭제</Text>
+            <Text style={[styles.deleteButtonText, { color: colors.error }]}>영구 삭제</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -83,18 +85,18 @@ export default function TrashScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={["top"]}>
+      <View style={[styles.header, { backgroundColor: colors.bg }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backText}>‹ 뒤로</Text>
+          <Text style={[styles.backText, { color: colors.primary }]}>‹ 뒤로</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>임시보관함</Text>
+        <Text style={[styles.title, { color: colors.text }]}>임시보관함</Text>
         <View style={styles.backButton} />
       </View>
 
       {loading ? (
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#2196F3" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : (
         <FlatList
@@ -106,7 +108,7 @@ export default function TrashScreen() {
           }
           ListEmptyComponent={
             <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>임시보관함이 비어있습니다</Text>
+              <Text style={[styles.emptyText, { color: colors.muted }]}>임시보관함이 비어있습니다</Text>
             </View>
           }
         />

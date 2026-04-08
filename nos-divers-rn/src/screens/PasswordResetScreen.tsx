@@ -12,10 +12,12 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useAuth } from "../lib/AuthContext";
+import { useTheme } from "../components/ThemeContext";
 
 export default function PasswordResetScreen() {
   const navigation = useNavigation();
   const { resetPassword } = useAuth();
+  const { colors } = useTheme();
 
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -48,26 +50,26 @@ export default function PasswordResetScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.bg }]}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <View style={styles.content}>
         {/* Header */}
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← 뒤로</Text>
+          <Text style={[styles.backButtonText, { color: colors.primary }]}>← 뒤로</Text>
         </TouchableOpacity>
 
-        <Text style={styles.title}>비밀번호 재설정</Text>
-        <Text style={styles.subtitle}>
+        <Text style={[styles.title, { color: colors.text }]}>비밀번호 재설정</Text>
+        <Text style={[styles.subtitle, { color: colors.muted }]}>
           가입하신 이메일 주소를 입력하시면{"\n"}비밀번호 재설정 링크를 보내드립니다.
         </Text>
 
         <View style={styles.form}>
-          <Text style={styles.label}>이메일</Text>
+          <Text style={[styles.label, { color: colors.text }]}>이메일</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
             placeholder="example@email.com"
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.muted}
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
@@ -76,7 +78,7 @@ export default function PasswordResetScreen() {
           />
 
           <TouchableOpacity
-            style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+            style={[styles.submitButton, { backgroundColor: colors.primary }, loading && styles.submitButtonDisabled]}
             onPress={handleReset}
             disabled={loading}
           >
@@ -88,7 +90,7 @@ export default function PasswordResetScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.cancelButton}>
-            <Text style={styles.cancelButtonText}>로그인으로 돌아가기</Text>
+            <Text style={[styles.cancelButtonText, { color: colors.muted }]}>로그인으로 돌아가기</Text>
           </TouchableOpacity>
         </View>
       </View>

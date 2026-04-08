@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
+import { useTheme } from "../components/ThemeContext";
 
 interface Section {
   title: string;
@@ -124,6 +125,7 @@ const SECTIONS: Section[] = [
 
 export default function SettingsGuideScreen() {
   const navigation = useNavigation();
+  const { colors } = useTheme();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   const toggle = (idx: number) => {
@@ -131,7 +133,7 @@ export default function SettingsGuideScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={["top"]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -139,9 +141,9 @@ export default function SettingsGuideScreen() {
           style={styles.backBtn}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Text style={styles.backText}>‹ 뒤로</Text>
+          <Text style={[styles.backText, { color: colors.primary }]}>‹ 뒤로</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>사용설명서</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>사용설명서</Text>
         <View style={styles.backBtn} />
       </View>
 
@@ -150,7 +152,7 @@ export default function SettingsGuideScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.intro}>
+        <Text style={[styles.intro, { color: colors.muted }]}>
           NoS Divers 앱의 주요 기능을 안내합니다.{"\n"}
           각 항목을 눌러 내용을 확인하세요.
         </Text>
@@ -158,18 +160,18 @@ export default function SettingsGuideScreen() {
         {SECTIONS.map((section, idx) => {
           const isOpen = openIndex === idx;
           return (
-            <View key={idx} style={styles.card}>
+            <View key={idx} style={[styles.card, { backgroundColor: colors.card }]}>
               <TouchableOpacity
-                style={styles.sectionHeader}
+                style={[styles.sectionHeader, { backgroundColor: `${colors.primary}15` }]}
                 onPress={() => toggle(idx)}
                 activeOpacity={0.7}
               >
-                <Text style={styles.sectionTitle}>{section.title}</Text>
-                <Text style={styles.chevron}>{isOpen ? "▲" : "▼"}</Text>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>{section.title}</Text>
+                <Text style={[styles.chevron, { color: colors.primary }]}>{isOpen ? "▲" : "▼"}</Text>
               </TouchableOpacity>
               {isOpen && (
-                <View style={styles.sectionBody}>
-                  <Text style={styles.sectionText}>{section.body}</Text>
+                <View style={[styles.sectionBody, { borderTopColor: colors.border }]}>
+                  <Text style={[styles.sectionText, { color: colors.text }]}>{section.body}</Text>
                 </View>
               )}
             </View>
@@ -177,8 +179,8 @@ export default function SettingsGuideScreen() {
         })}
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>NoS Divers v2.0.0</Text>
-          <Text style={styles.footerSub}>SINCE 2019 DIVING TEAM</Text>
+          <Text style={[styles.footerText, { color: colors.muted }]}>NoS Divers v2.0.0</Text>
+          <Text style={[styles.footerSub, { color: colors.muted }]}>SINCE 2019 DIVING TEAM</Text>
         </View>
       </ScrollView>
     </SafeAreaView>

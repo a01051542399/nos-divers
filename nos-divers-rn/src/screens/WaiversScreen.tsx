@@ -11,12 +11,14 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
+import { useTheme } from "../components/ThemeContext";
 import type { Tour, Waiver } from "../types";
 import * as db from "../lib/supabase-store";
 import { exportAllWaiversPDF } from "../utils/export-waiver-pdf";
 
 export default function WaiversScreen() {
   const navigation = useNavigation<any>();
+  const { colors } = useTheme();
   const [tours, setTours] = useState<Tour[]>([]);
   const [waiversByTour, setWaiversByTour] = useState<Record<number, Waiver[]>>(
     {},
@@ -86,19 +88,19 @@ export default function WaiversScreen() {
     const currentUser = profile.name || null;
 
     return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={["top"]}>
         {/* Header */}
-        <View style={styles.detailHeader}>
+        <View style={[styles.detailHeader, { backgroundColor: colors.bg }]}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
             <TouchableOpacity
               onPress={() => setSelectedTourId(null)}
               style={styles.backBtn}
             >
-              <Text style={styles.backBtnText}>{"<"} 뒤로</Text>
+              <Text style={[styles.backBtnText, { color: colors.primary }]}>{"<"} 뒤로</Text>
             </TouchableOpacity>
             {waivers.length > 0 && (
               <TouchableOpacity
-                style={[styles.pdfBtn, exportingPDF && { opacity: 0.5 }]}
+                style={[styles.pdfBtn, { backgroundColor: colors.error }, exportingPDF && { opacity: 0.5 }]}
                 disabled={exportingPDF}
                 onPress={async () => {
                   setExportingPDF(true);
@@ -117,14 +119,14 @@ export default function WaiversScreen() {
               </TouchableOpacity>
             )}
           </View>
-          <Text style={styles.detailTitle}>{tour.name}</Text>
-          <Text style={styles.detailSub}>
+          <Text style={[styles.detailTitle, { color: colors.text }]}>{tour.name}</Text>
+          <Text style={[styles.detailSub, { color: colors.muted }]}>
             {formatDate(tour.date)} · {tour.location || ""}
           </Text>
           {currentUser ? (
-            <Text style={styles.currentUserText}>내 이름: {currentUser}</Text>
+            <Text style={[styles.currentUserText, { color: colors.primary }]}>내 이름: {currentUser}</Text>
           ) : (
-            <Text style={styles.noUserText}>
+            <Text style={[styles.noUserText, { color: colors.error }]}>
               설정에서 이름을 등록하면 서명할 수 있습니다
             </Text>
           )}
@@ -143,30 +145,30 @@ export default function WaiversScreen() {
             renderItem={({ item: p }) => {
               const signed = signedNames.includes(p.name);
               return (
-                <View style={styles.participantRow}>
+                <View style={[styles.participantRow, { borderBottomColor: colors.border }]}>
                   <View
                     style={[
                       styles.avatar,
                       {
-                        backgroundColor: signed ? "#4CAF50" : "#E0E0E0",
+                        backgroundColor: signed ? colors.success : colors.muted + "40",
                       },
                     ]}
                   >
                     <Text
                       style={[
                         styles.avatarText,
-                        { color: signed ? "#fff" : "#999" },
+                        { color: signed ? "#fff" : colors.muted },
                       ]}
                     >
                       {signed ? "\u2713" : p.name.charAt(0)}
                     </Text>
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.participantName}>{p.name}</Text>
+                    <Text style={[styles.participantName, { color: colors.text }]}>{p.name}</Text>
                     <Text
                       style={[
                         styles.statusText,
-                        { color: signed ? "#4CAF50" : "#F44336" },
+                        { color: signed ? colors.success : colors.error },
                       ]}
                     >
                       {signed ? "서명 완료" : "미서명"}
@@ -174,7 +176,7 @@ export default function WaiversScreen() {
                   </View>
                   {signed ? (
                     <TouchableOpacity
-                      style={styles.viewBtn}
+                      style={[styles.viewBtn, { backgroundColor: colors.success }]}
                       onPress={() => {
                         const w = waivers.find((wv) => wv.signerName === p.name);
                         if (w) {
@@ -189,7 +191,7 @@ export default function WaiversScreen() {
                     </TouchableOpacity>
                   ) : currentUser === p.name ? (
                     <TouchableOpacity
-                      style={styles.signBtn}
+                      style={[styles.signBtn, { backgroundColor: colors.primary }]}
                       onPress={() =>
                         navigation.navigate("WaiverSign", {
                           tourId: tour.id,
@@ -199,7 +201,7 @@ export default function WaiversScreen() {
                       <Text style={styles.signBtnText}>서명</Text>
                     </TouchableOpacity>
                   ) : (
-                    <Text style={styles.onlySelfText}>본인만 가능</Text>
+                    <Text style={[styles.onlySelfText, { color: colors.muted }]}>본인만 가능</Text>
                   )}
                 </View>
               );
@@ -213,22 +215,22 @@ export default function WaiversScreen() {
   // ── Tour list view ──
   if (loading) {
     return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
-        <Text style={styles.title}>면책동의서</Text>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={["top"]}>
+        <Text style={[styles.title, { color: colors.text }]}>면책동의서</Text>
         <View style={styles.emptyState}>
-          <ActivityIndicator size="large" color="#2196F3" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
-      <Text style={styles.title}>면책동의서</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={["top"]}>
+      <Text style={[styles.title, { color: colors.text }]}>면책동의서</Text>
 
       {tours.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>
+          <Text style={[styles.emptyText, { color: colors.muted }]}>
             투어를 생성하면 동의서가 자동으로 생성됩니다
           </Text>
         </View>
@@ -249,23 +251,23 @@ export default function WaiversScreen() {
 
             return (
               <TouchableOpacity
-                style={styles.card}
+                style={[styles.card, { backgroundColor: colors.card }]}
                 onPress={() => setSelectedTourId(tour.id)}
                 activeOpacity={0.7}
               >
                 <View style={styles.cardRow}>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.cardTitle}>{tour.name}</Text>
-                    <Text style={styles.cardSub}>
+                    <Text style={[styles.cardTitle, { color: colors.text }]}>{tour.name}</Text>
+                    <Text style={[styles.cardSub, { color: colors.muted }]}>
                       {formatDate(tour.date)} · {tour.participants.length}명
                     </Text>
                     {unsigned.length > 0 && (
-                      <Text style={styles.unsignedText}>
+                      <Text style={[styles.unsignedText, { color: colors.error }]}>
                         미서명: {unsigned.map((p) => p.name).join(", ")}
                       </Text>
                     )}
                   </View>
-                  <Text style={styles.chevron}>{">"}</Text>
+                  <Text style={[styles.chevron, { color: colors.muted }]}>{">"}</Text>
                 </View>
               </TouchableOpacity>
             );

@@ -12,10 +12,12 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
+import { useTheme } from "../components/ThemeContext";
 import * as db from "../lib/supabase-store";
 
 export default function JoinTourScreen() {
   const navigation = useNavigation<any>();
+  const { colors } = useTheme();
 
   const [step, setStep] = useState(0); // 0: 코드 입력, 1: 확인 + 참여
   const [inviteCode, setInviteCode] = useState("");
@@ -97,13 +99,13 @@ export default function JoinTourScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={["top"]}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { borderBottomColor: colors.border }]}>
           <TouchableOpacity
             onPress={() => {
               if (step === 1) {
@@ -114,33 +116,33 @@ export default function JoinTourScreen() {
               }
             }}
           >
-            <Text style={styles.backText}>
+            <Text style={[styles.backText, { color: colors.primary }]}>
               {step === 1 ? "뒤로" : "취소"}
             </Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>투어 참여하기</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>투어 참여하기</Text>
           <View style={{ width: 40 }} />
         </View>
 
         {/* Step 0: 초대 코드 입력 */}
         {step === 0 && (
           <View style={styles.content}>
-            <View style={styles.iconCircle}>
-              <Text style={styles.iconText}>+</Text>
+            <View style={[styles.iconCircle, { backgroundColor: `${colors.primary}20` }]}>
+              <Text style={[styles.iconText, { color: colors.primary }]}>+</Text>
             </View>
-            <Text style={styles.mainTitle}>투어 참여하기</Text>
-            <Text style={styles.subtitle}>
+            <Text style={[styles.mainTitle, { color: colors.text }]}>투어 참여하기</Text>
+            <Text style={[styles.subtitle, { color: colors.muted }]}>
               초대 코드를 입력하여 다이빙 투어에 참여하세요
             </Text>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>초대 코드</Text>
+              <Text style={[styles.label, { color: colors.text }]}>초대 코드</Text>
               <TextInput
-                style={styles.codeInput}
+                style={[styles.codeInput, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
                 value={inviteCode}
                 onChangeText={(v) => setInviteCode(v.toUpperCase())}
                 placeholder="ABC123"
-                placeholderTextColor="#9CB8C5"
+                placeholderTextColor={colors.muted}
                 maxLength={6}
                 autoCapitalize="characters"
                 autoFocus
@@ -151,6 +153,7 @@ export default function JoinTourScreen() {
             <TouchableOpacity
               style={[
                 styles.primaryButton,
+                { backgroundColor: colors.primary },
                 inviteCode.trim().length < 6 && styles.buttonDisabled,
               ]}
               onPress={handleCheckCode}
@@ -169,7 +172,7 @@ export default function JoinTourScreen() {
         {step === 1 && tour && (
           <View style={styles.content}>
             {/* 투어 정보 카드 */}
-            <View style={styles.tourInfoCard}>
+            <View style={[styles.tourInfoCard, { backgroundColor: colors.primary }]}>
               <Text style={styles.tourInfoLabel}>참여할 투어</Text>
               <Text style={styles.tourInfoName}>{tour.name}</Text>
               <View style={styles.tourInfoMeta}>
@@ -187,17 +190,17 @@ export default function JoinTourScreen() {
 
             {/* 이름 입력 */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>이름 입력</Text>
+              <Text style={[styles.label, { color: colors.text }]}>이름 입력</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
                 value={userName}
                 onChangeText={setUserName}
                 placeholder="참여자 이름을 입력하세요"
-                placeholderTextColor="#9CB8C5"
+                placeholderTextColor={colors.muted}
                 autoFocus
                 onSubmitEditing={handleJoin}
               />
-              <Text style={styles.hint}>
+              <Text style={[styles.hint, { color: colors.muted }]}>
                 동명이인의 경우 이름 뒤에 숫자를 붙여주세요 (예: 홍길동2)
               </Text>
             </View>
@@ -205,6 +208,7 @@ export default function JoinTourScreen() {
             <TouchableOpacity
               style={[
                 styles.primaryButton,
+                { backgroundColor: colors.primary },
                 !userName.trim() && styles.buttonDisabled,
               ]}
               onPress={handleJoin}
@@ -224,7 +228,7 @@ export default function JoinTourScreen() {
                 setTour(null);
               }}
             >
-              <Text style={styles.secondaryActionText}>다른 코드 입력</Text>
+              <Text style={[styles.secondaryActionText, { color: colors.muted }]}>다른 코드 입력</Text>
             </TouchableOpacity>
           </View>
         )}

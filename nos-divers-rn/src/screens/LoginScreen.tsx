@@ -52,7 +52,7 @@ export default function LoginScreen() {
         <View style={styles.form}>
           <Text style={[styles.label, { color: colors.text }]}>이메일</Text>
           <TextInput
-            style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
+            style={[styles.input, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
             placeholder="example@email.com"
             placeholderTextColor={colors.muted}
             value={email}
@@ -63,7 +63,7 @@ export default function LoginScreen() {
 
           <Text style={[styles.label, { color: colors.text }]}>비밀번호</Text>
           <TextInput
-            style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
+            style={[styles.input, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
             placeholder="비밀번호 입력"
             placeholderTextColor={colors.muted}
             value={password}
@@ -76,7 +76,7 @@ export default function LoginScreen() {
             style={styles.forgotPassword}
             onPress={() => navigation.navigate("PasswordReset")}
           >
-            <Text style={styles.forgotPasswordText}>비밀번호를 잊으셨나요?</Text>
+            <Text style={[styles.forgotPasswordText, { color: colors.primary }]}>비밀번호를 잊으셨나요?</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -143,11 +143,9 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: "bold",
-    color: "#023E58",
   },
   subtitle: {
     fontSize: 12,
-    color: "#3D7A94",
     marginBottom: 32,
   },
   form: {
@@ -156,19 +154,15 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#023E58",
     marginBottom: 6,
   },
   input: {
-    backgroundColor: "#fff",
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    color: "#023E58",
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "#C8DFE8",
   },
   forgotPassword: {
     alignSelf: "flex-end",
@@ -176,12 +170,10 @@ const styles = StyleSheet.create({
     marginTop: -8,
   },
   forgotPasswordText: {
-    color: "#2196F3",
     fontSize: 13,
     fontWeight: "500",
   },
   loginButton: {
-    backgroundColor: "#2196F3",
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: "center",
@@ -199,11 +191,9 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   signupText: {
-    color: "#3D7A94",
     fontSize: 14,
   },
   signupLink: {
-    color: "#2196F3",
     fontSize: 14,
     fontWeight: "600",
   },
@@ -215,11 +205,9 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: "#C8DFE8",
   },
   dividerText: {
     marginHorizontal: 12,
-    color: "#3D7A94",
     fontSize: 14,
   },
   oauthButtonInner: {

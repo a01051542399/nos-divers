@@ -385,17 +385,14 @@ const styles = StyleSheet.create({
   backBtn: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#0891b2",
   },
   title: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#023E58",
   },
   editBtn: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#0891b2",
   },
   scroll: {
     flex: 1,
@@ -418,24 +415,20 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 15,
-    color: "#3D7A94",
   },
   infoValue: {
     fontSize: 15,
-    color: "#023E58",
     fontWeight: "500",
     maxWidth: "60%",
     textAlign: "right",
   },
   badge: {
-    backgroundColor: "#E0F2FE",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
   },
   badgeText: {
     fontSize: 13,
-    color: "#0891b2",
     fontWeight: "600",
   },
   // Edit mode

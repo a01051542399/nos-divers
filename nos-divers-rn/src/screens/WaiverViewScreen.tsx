@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import { useTheme } from "../components/ThemeContext";
 import type { Waiver, WaiverPersonalInfo } from "../types";
 import * as db from "../lib/supabase-store";
 import { HEALTH_CHECKLIST } from "../waiver-template";
@@ -66,6 +67,7 @@ function formatSignedAt(signedAt: string | Date): string {
 export default function WaiverViewScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute();
+  const { colors } = useTheme();
   const { waiver, tourName } = route.params as RouteParams;
 
   const [exporting, setExporting] = useState(false);
@@ -121,15 +123,15 @@ export default function WaiverViewScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={["top"]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backBtnText}>{"<"} 뒤로</Text>
+          <Text style={[styles.backBtnText, { color: colors.primary }]}>{"<"} 뒤로</Text>
         </TouchableOpacity>
-        <Text style={styles.signerName}>{waiver.signerName}</Text>
-        <Text style={styles.signedAt}>서명일시: {formatSignedAt(waiver.signedAt)}</Text>
-        <Text style={styles.tourName}>{tourName}</Text>
+        <Text style={[styles.signerName, { color: colors.text }]}>{waiver.signerName}</Text>
+        <Text style={[styles.signedAt, { color: colors.muted }]}>서명일시: {formatSignedAt(waiver.signedAt)}</Text>
+        <Text style={[styles.tourName, { color: colors.muted }]}>{tourName}</Text>
       </View>
 
       <ScrollView
@@ -138,28 +140,28 @@ export default function WaiverViewScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* 개인정보 */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>개인 정보</Text>
+        <View style={[styles.section, { backgroundColor: colors.card }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text, borderBottomColor: colors.border }]}>개인 정보</Text>
           {infoRows.map(([label, value]) => (
-            <View key={label} style={styles.infoRow}>
-              <Text style={styles.infoLabel}>{label}</Text>
-              <Text style={styles.infoValue}>{value || "-"}</Text>
+            <View key={label} style={[styles.infoRow, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.infoLabel, { color: colors.muted }]}>{label}</Text>
+              <Text style={[styles.infoValue, { color: colors.text }]}>{value || "-"}</Text>
             </View>
           ))}
         </View>
 
         {/* 건강 체크리스트 */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>건강 체크리스트</Text>
+        <View style={[styles.section, { backgroundColor: colors.card }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text, borderBottomColor: colors.border }]}>건강 체크리스트</Text>
           {HEALTH_CHECKLIST.map((item, i) => (
             <View key={i} style={styles.checkRow}>
-              <Text style={[styles.checkIcon, checklist[i] ? styles.checkYes : styles.checkNo]}>
+              <Text style={[styles.checkIcon, checklist[i] ? styles.checkYes : { color: colors.muted }]}>
                 {checklist[i] ? "✓" : "✗"}
               </Text>
               <Text
                 style={[
                   styles.checkText,
-                  checklist[i] ? styles.checkTextYes : styles.checkTextNo,
+                  checklist[i] ? styles.checkTextYes : { color: colors.muted },
                 ]}
               >
                 {item}
@@ -167,18 +169,18 @@ export default function WaiverViewScreen() {
             </View>
           ))}
           {waiver.healthOther ? (
-            <View style={styles.healthOther}>
-              <Text style={styles.healthOtherLabel}>기타 건강 정보:</Text>
-              <Text style={styles.healthOtherText}>{waiver.healthOther}</Text>
+            <View style={[styles.healthOther, { backgroundColor: colors.bg }]}>
+              <Text style={[styles.healthOtherLabel, { color: colors.warning }]}>기타 건강 정보:</Text>
+              <Text style={[styles.healthOtherText, { color: colors.text }]}>{waiver.healthOther}</Text>
             </View>
           ) : null}
         </View>
 
         {/* 서명 이미지 */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>서명</Text>
+        <View style={[styles.section, { backgroundColor: colors.card }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text, borderBottomColor: colors.border }]}>서명</Text>
           {waiver.signatureImage ? (
-            <View style={styles.signatureContainer}>
+            <View style={[styles.signatureContainer, { backgroundColor: colors.bg, borderColor: colors.border }]}>
               <Image
                 source={{ uri: waiver.signatureImage }}
                 style={styles.signatureImage}
@@ -186,10 +188,10 @@ export default function WaiverViewScreen() {
               />
             </View>
           ) : (
-            <Text style={styles.noSignature}>서명 이미지 없음</Text>
+            <Text style={[styles.noSignature, { color: colors.muted }]}>서명 이미지 없음</Text>
           )}
           <View style={styles.agreedBadge}>
-            <Text style={[styles.agreedText, waiver.agreed ? styles.agreedYes : styles.agreedNo]}>
+            <Text style={[styles.agreedText, waiver.agreed ? styles.agreedYes : { color: colors.error }]}>
               {waiver.agreed ? "✓ 동의함" : "✗ 미동의"}
             </Text>
           </View>
@@ -200,9 +202,9 @@ export default function WaiverViewScreen() {
       </ScrollView>
 
       {/* Action Buttons */}
-      <View style={styles.bottomBar}>
+      <View style={[styles.bottomBar, { backgroundColor: colors.bg, borderTopColor: colors.border }]}>
         <TouchableOpacity
-          style={[styles.actionBtn, styles.pdfBtn, exporting && styles.btnDisabled]}
+          style={[styles.actionBtn, { backgroundColor: colors.primary }, exporting && styles.btnDisabled]}
           onPress={handleExportPDF}
           disabled={exporting || deleting}
         >
@@ -214,7 +216,7 @@ export default function WaiverViewScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.actionBtn, styles.deleteBtn, deleting && styles.btnDisabled]}
+          style={[styles.actionBtn, { backgroundColor: colors.error }, deleting && styles.btnDisabled]}
           onPress={handleDelete}
           disabled={exporting || deleting}
         >

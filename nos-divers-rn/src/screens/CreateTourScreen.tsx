@@ -12,10 +12,12 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
+import { useTheme } from "../components/ThemeContext";
 import * as db from "../lib/supabase-store";
 
 export default function CreateTourScreen() {
   const navigation = useNavigation<any>();
+  const { colors } = useTheme();
 
   const [name, setName] = useState("");
   const [dateStart, setDateStart] = useState("");
@@ -82,17 +84,17 @@ export default function CreateTourScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={["top"]}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { borderBottomColor: colors.border }]}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backText}>취소</Text>
+            <Text style={[styles.backText, { color: colors.primary }]}>취소</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>새 투어 만들기</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>새 투어 만들기</Text>
           <View style={{ width: 40 }} />
         </View>
 
@@ -102,91 +104,92 @@ export default function CreateTourScreen() {
           keyboardShouldPersistTaps="handled"
         >
           {/* 투어 이름 */}
-          <Text style={styles.label}>투어 이름 *</Text>
+          <Text style={[styles.label, { color: colors.text }]}>투어 이름 *</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
             value={name}
             onChangeText={setName}
             placeholder="예: 동해 수중정화활동"
-            placeholderTextColor="#9CB8C5"
+            placeholderTextColor={colors.muted}
           />
 
           {/* 주최자 */}
-          <Text style={styles.label}>주최자</Text>
-          <View style={styles.readonlyField}>
+          <Text style={[styles.label, { color: colors.text }]}>주최자</Text>
+          <View style={[styles.readonlyField, { backgroundColor: colors.inputBg }]}>
             {profileName ? (
-              <Text style={styles.readonlyText}>{profileName}</Text>
+              <Text style={[styles.readonlyText, { color: colors.text }]}>{profileName}</Text>
             ) : (
-              <Text style={styles.errorHint}>
+              <Text style={[styles.errorHint, { color: colors.error }]}>
                 설정에서 이름을 먼저 등록해주세요
               </Text>
             )}
           </View>
 
           {/* 수정 비밀번호 */}
-          <Text style={styles.label}>수정 비밀번호 * (4자리 숫자)</Text>
+          <Text style={[styles.label, { color: colors.text }]}>수정 비밀번호 * (4자리 숫자)</Text>
           <TextInput
-            style={[styles.input, styles.pinInput]}
+            style={[styles.input, styles.pinInput, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
             value={accessCode}
             onChangeText={(v) => setAccessCode(v.replace(/[^0-9]/g, "").slice(0, 4))}
             placeholder="0000"
-            placeholderTextColor="#9CB8C5"
+            placeholderTextColor={colors.muted}
             keyboardType="number-pad"
             maxLength={4}
             secureTextEntry
           />
-          <Text style={styles.hint}>
+          <Text style={[styles.hint, { color: colors.muted }]}>
             *내용 수정시 사용, 관리자에게만 공개하십시오
           </Text>
 
           {/* 투어 기간 */}
-          <Text style={styles.label}>투어 기간 * (연월일 6자리)</Text>
+          <Text style={[styles.label, { color: colors.text }]}>투어 기간 * (연월일 6자리)</Text>
           <View style={styles.dateRow}>
             <TextInput
-              style={[styles.input, styles.dateInput]}
+              style={[styles.input, styles.dateInput, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
               value={displayDate(dateStart)}
               onChangeText={(v) => setDateStart(formatDateInput(v))}
               placeholder="260401"
-              placeholderTextColor="#9CB8C5"
+              placeholderTextColor={colors.muted}
               keyboardType="number-pad"
               maxLength={8}
             />
-            <Text style={styles.dateSeparator}>~</Text>
+            <Text style={[styles.dateSeparator, { color: colors.muted }]}>~</Text>
             <TextInput
-              style={[styles.input, styles.dateInput]}
+              style={[styles.input, styles.dateInput, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
               value={displayDate(dateEnd)}
               onChangeText={(v) => setDateEnd(formatDateInput(v))}
               placeholder="260403"
-              placeholderTextColor="#9CB8C5"
+              placeholderTextColor={colors.muted}
               keyboardType="number-pad"
               maxLength={8}
             />
           </View>
-          <Text style={styles.hint}>
+          <Text style={[styles.hint, { color: colors.muted }]}>
             예: 260401 ~ 260403 (26년 4월 1일 ~ 3일)
           </Text>
 
           {/* 장소 */}
-          <Text style={styles.label}>장소</Text>
+          <Text style={[styles.label, { color: colors.text }]}>장소</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
             value={location}
             onChangeText={setLocation}
             placeholder="예: 사라웃리조트"
-            placeholderTextColor="#9CB8C5"
+            placeholderTextColor={colors.muted}
           />
 
           {/* 버튼 */}
           <View style={styles.buttonRow}>
             <TouchableOpacity
-              style={styles.cancelButton}
+              style={[styles.cancelButton, { backgroundColor: colors.card, borderColor: colors.border }]}
               onPress={() => navigation.goBack()}
             >
-              <Text style={styles.cancelButtonText}>취소</Text>
+              <Text style={[styles.cancelButtonText, { color: colors.muted }]}>취소</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[
                 styles.createButton,
+                { backgroundColor: colors.primary },
                 submitting && styles.buttonDisabled,
               ]}
               onPress={handleCreate}

@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
+import { useTheme } from "../components/ThemeContext";
 import { useTours } from "../hooks/useSupabase";
 import { useAppSettings } from "../hooks/useSupabase";
 import { useToast } from "../components/Toast";
@@ -17,6 +18,7 @@ import type { Tour } from "../types";
 
 export default function HiddenToursScreen() {
   const navigation = useNavigation<any>();
+  const { colors } = useTheme();
   const { toast } = useToast();
   const { tours, loading: toursLoading } = useTours();
   const { settings, loading: settingsLoading, refresh: refreshSettings } = useAppSettings();
@@ -40,16 +42,16 @@ export default function HiddenToursScreen() {
   const loading = toursLoading || settingsLoading;
 
   const renderItem = ({ item }: { item: Tour }) => (
-    <View style={styles.card}>
+    <View style={[styles.card, { backgroundColor: colors.card }]}>
       <View style={styles.cardInfo}>
-        <Text style={styles.tourName}>{item.name}</Text>
-        <Text style={styles.tourMeta}>
+        <Text style={[styles.tourName, { color: colors.text }]}>{item.name}</Text>
+        <Text style={[styles.tourMeta, { color: colors.muted }]}>
           {item.date}
           {item.location ? ` · ${item.location}` : ""}
         </Text>
       </View>
       <TouchableOpacity
-        style={styles.restoreButton}
+        style={[styles.restoreButton, { backgroundColor: colors.primary }]}
         onPress={() => handleRestore(item)}
         activeOpacity={0.75}
       >
@@ -59,18 +61,18 @@ export default function HiddenToursScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={["top"]}>
+      <View style={[styles.header, { backgroundColor: colors.bg }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backText}>‹ 뒤로</Text>
+          <Text style={[styles.backText, { color: colors.primary }]}>‹ 뒤로</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>숨긴 투어</Text>
+        <Text style={[styles.title, { color: colors.text }]}>숨긴 투어</Text>
         <View style={styles.backButton} />
       </View>
 
       {loading ? (
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#2196F3" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : (
         <FlatList
@@ -82,7 +84,7 @@ export default function HiddenToursScreen() {
           }
           ListEmptyComponent={
             <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>숨긴 투어가 없습니다</Text>
+              <Text style={[styles.emptyText, { color: colors.muted }]}>숨긴 투어가 없습니다</Text>
             </View>
           }
         />

@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useTheme } from "../components/ThemeContext";
 import { useToast } from "../components/Toast";
 import * as db from "../lib/supabase-store";
 import type { Tour, Waiver } from "../types";
@@ -57,11 +58,12 @@ interface StatCardProps {
 }
 
 function StatCard({ label, value, color, icon }: StatCardProps) {
+  const { colors } = useTheme();
   return (
-    <View style={[styles.statCard, { borderLeftColor: color }]}>
+    <View style={[styles.statCard, { backgroundColor: colors.card, borderLeftColor: color }]}>
       <Text style={styles.statIcon}>{icon}</Text>
       <Text style={[styles.statValue, { color }]}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
+      <Text style={[styles.statLabel, { color: colors.muted }]}>{label}</Text>
     </View>
   );
 }

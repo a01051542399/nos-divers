@@ -13,12 +13,14 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useAuth } from "../lib/AuthContext";
+import { useTheme } from "../components/ThemeContext";
 
 type DivingLevel = "" | "OW" | "AOW" | "Rescue" | "Divemaster" | "Instructor";
 
 export default function SignupScreen() {
   const navigation = useNavigation();
   const { signUpWithEmail } = useAuth();
+  const { colors } = useTheme();
 
   // Required fields
   const [name, setName] = useState("");
@@ -82,7 +84,7 @@ export default function SignupScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.bg }]}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView
@@ -93,52 +95,52 @@ export default function SignupScreen() {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Text style={styles.backButtonText}>← 뒤로</Text>
+            <Text style={[styles.backButtonText, { color: colors.primary }]}>← 뒤로</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>회원가입</Text>
-          <Text style={styles.subtitle}>NoS Divers에 오신 것을 환영합니다</Text>
+          <Text style={[styles.title, { color: colors.text }]}>회원가입</Text>
+          <Text style={[styles.subtitle, { color: colors.muted }]}>NoS Divers에 오신 것을 환영합니다</Text>
         </View>
 
         {/* Required Fields */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>기본 정보 (필수)</Text>
+        <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>기본 정보 (필수)</Text>
 
-          <Text style={styles.label}>이름 *</Text>
+          <Text style={[styles.label, { color: colors.text }]}>이름 *</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
             placeholder="실명을 입력해주세요"
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.muted}
             value={name}
             onChangeText={setName}
             autoCapitalize="none"
           />
 
-          <Text style={styles.label}>이메일 *</Text>
+          <Text style={[styles.label, { color: colors.text }]}>이메일 *</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
             placeholder="example@email.com"
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.muted}
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
           />
 
-          <Text style={styles.label}>비밀번호 * (최소 6자)</Text>
+          <Text style={[styles.label, { color: colors.text }]}>비밀번호 * (최소 6자)</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
             placeholder="비밀번호 입력"
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.muted}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
           />
 
-          <Text style={styles.label}>비밀번호 확인 *</Text>
+          <Text style={[styles.label, { color: colors.text }]}>비밀번호 확인 *</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
             placeholder="비밀번호 재입력"
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.muted}
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             secureTextEntry
@@ -146,49 +148,54 @@ export default function SignupScreen() {
         </View>
 
         {/* Optional Fields */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>추가 정보 (선택)</Text>
+        <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>추가 정보 (선택)</Text>
 
-          <Text style={styles.label}>전화번호</Text>
+          <Text style={[styles.label, { color: colors.text }]}>전화번호</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
             placeholder="010-0000-0000"
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.muted}
             value={phone}
             onChangeText={(text) => setPhone(formatPhone(text))}
             keyboardType="phone-pad"
           />
 
-          <Text style={styles.label}>생년월일</Text>
+          <Text style={[styles.label, { color: colors.text }]}>생년월일</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
             placeholder="YYYY-MM-DD"
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.muted}
             value={birthDate}
             onChangeText={(text) => setBirthDate(formatBirthDate(text))}
             keyboardType="numeric"
           />
 
-          <Text style={styles.label}>다이빙 레벨</Text>
+          <Text style={[styles.label, { color: colors.text }]}>다이빙 레벨</Text>
           <View style={styles.levelGrid}>
             {divingLevels.map((level) => (
               <TouchableOpacity
                 key={level}
-                style={[styles.levelChip, divingLevel === level && styles.levelChipActive]}
+                style={[
+                  styles.levelChip,
+                  divingLevel === level
+                    ? [styles.levelChipActive, { backgroundColor: colors.primary, borderColor: colors.primary }]
+                    : { backgroundColor: colors.inputBg, borderColor: colors.border }
+                ]}
                 onPress={() => setDivingLevel(divingLevel === level ? "" : level)}
               >
-                <Text style={[styles.levelChipText, divingLevel === level && styles.levelChipTextActive]}>
+                <Text style={[styles.levelChipText, divingLevel === level ? styles.levelChipTextActive : { color: colors.muted }]}>
                   {level}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
 
-          <Text style={styles.label}>비상 연락처</Text>
+          <Text style={[styles.label, { color: colors.text }]}>비상 연락처</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
             placeholder="비상시 연락할 분의 이름과 번호"
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.muted}
             value={emergencyContact}
             onChangeText={setEmergencyContact}
           />
@@ -196,7 +203,7 @@ export default function SignupScreen() {
 
         {/* Submit */}
         <TouchableOpacity
-          style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+          style={[styles.submitButton, { backgroundColor: colors.primary }, loading && styles.submitButtonDisabled]}
           onPress={handleSignup}
           disabled={loading}
         >
@@ -208,9 +215,9 @@ export default function SignupScreen() {
         </TouchableOpacity>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>이미 계정이 있으신가요? </Text>
+          <Text style={[styles.footerText, { color: colors.muted }]}>이미 계정이 있으신가요? </Text>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.footerLink}>로그인</Text>
+            <Text style={[styles.footerLink, { color: colors.primary }]}>로그인</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

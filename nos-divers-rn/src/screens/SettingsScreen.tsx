@@ -220,18 +220,18 @@ export default function SettingsScreen() {
           style={styles.modalOverlay}
           behavior={Platform.OS === "ios" ? "padding" : undefined}
         >
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>비밀번호 변경</Text>
+          <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>비밀번호 변경</Text>
 
             {hasPassword && (
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>현재 비밀번호</Text>
+                <Text style={[styles.inputLabel, { color: colors.muted }]}>현재 비밀번호</Text>
                 <TextInput
-                  style={styles.modalInput}
+                  style={[styles.modalInput, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
                   value={currentPw}
                   onChangeText={setCurrentPw}
                   placeholder="현재 비밀번호 입력"
-                  placeholderTextColor="#9ca3af"
+                  placeholderTextColor={colors.muted}
                   secureTextEntry
                   autoCapitalize="none"
                 />
@@ -239,26 +239,26 @@ export default function SettingsScreen() {
             )}
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>새 비밀번호</Text>
+              <Text style={[styles.inputLabel, { color: colors.muted }]}>새 비밀번호</Text>
               <TextInput
-                style={styles.modalInput}
+                style={[styles.modalInput, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
                 value={newPw}
                 onChangeText={setNewPw}
                 placeholder="새 비밀번호 (4자 이상)"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor={colors.muted}
                 secureTextEntry
                 autoCapitalize="none"
               />
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>비밀번호 확인</Text>
+              <Text style={[styles.inputLabel, { color: colors.muted }]}>비밀번호 확인</Text>
               <TextInput
-                style={styles.modalInput}
+                style={[styles.modalInput, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
                 value={confirmPw}
                 onChangeText={setConfirmPw}
                 placeholder="비밀번호 다시 입력"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor={colors.muted}
                 secureTextEntry
                 autoCapitalize="none"
               />
@@ -273,7 +273,7 @@ export default function SettingsScreen() {
                 <Text style={styles.cancelButtonText}>취소</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modalButton, styles.saveButton, savingPw && styles.saveButtonDisabled]}
+                style={[styles.modalButton, styles.saveButton, { backgroundColor: colors.primary }, savingPw && styles.saveButtonDisabled]}
                 onPress={handleSavePassword}
                 disabled={savingPw}
               >
@@ -297,20 +297,20 @@ export default function SettingsScreen() {
           style={styles.modalOverlay}
           behavior={Platform.OS === "ios" ? "padding" : undefined}
         >
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>관리자 인증</Text>
-            <Text style={styles.adminDesc}>
+          <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>관리자 인증</Text>
+            <Text style={[styles.adminDesc, { color: colors.muted }]}>
               관리자 비밀번호를 입력하세요.
             </Text>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>관리자 비밀번호</Text>
+              <Text style={[styles.inputLabel, { color: colors.muted }]}>관리자 비밀번호</Text>
               <TextInput
-                style={styles.modalInput}
+                style={[styles.modalInput, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
                 value={adminPw}
                 onChangeText={setAdminPw}
                 placeholder="비밀번호 입력"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor={colors.muted}
                 secureTextEntry
                 autoCapitalize="none"
                 onSubmitEditing={handleAdminLogin}
@@ -327,7 +327,7 @@ export default function SettingsScreen() {
                 <Text style={styles.cancelButtonText}>취소</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modalButton, styles.saveButton, verifyingAdmin && styles.saveButtonDisabled]}
+                style={[styles.modalButton, styles.saveButton, { backgroundColor: colors.primary }, verifyingAdmin && styles.saveButtonDisabled]}
                 onPress={handleAdminLogin}
                 disabled={verifyingAdmin}
               >
@@ -495,3 +495,51 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
 });
+
+export function createSettingsStyles(colors: any) {
+  return StyleSheet.create({
+    modalCard: {
+      width: "100%",
+      backgroundColor: colors.card,
+      borderRadius: 16,
+      padding: 24,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.2,
+      shadowRadius: 12,
+      elevation: 10,
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontWeight: "bold",
+      color: colors.text,
+      marginBottom: 8,
+      textAlign: "center",
+    },
+    adminDesc: {
+      fontSize: 13,
+      color: colors.muted,
+      textAlign: "center",
+      marginBottom: 20,
+    },
+    inputLabel: {
+      fontSize: 13,
+      fontWeight: "600",
+      color: colors.muted,
+      marginBottom: 6,
+    },
+    modalInput: {
+      backgroundColor: colors.inputBg,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      fontSize: 15,
+      color: colors.text,
+    },
+    saveButton: {
+      backgroundColor: colors.primary,
+    },
+  });
+}
