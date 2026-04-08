@@ -334,11 +334,11 @@ window.ReactNativeWebView.postMessage(JSON.stringify({type:'image',data:c.toData
         {STEPS[step]} ({step + 1}/{STEPS.length})
       </Text>
 
+      {step !== 2 ? (
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        {step !== 2 ? (
           <ScrollView
             ref={scrollRef}
             style={{ flex: 1 }}
@@ -516,8 +516,9 @@ window.ReactNativeWebView.postMessage(JSON.stringify({type:'image',data:c.toData
               </View>
             )}
           </ScrollView>
-        ) : (
-          /* ── Step 2: Signature — ScrollView 밖으로 분리 (터치 충돌 방지) ── */
+      </KeyboardAvoidingView>
+      ) : (
+          /* ── Step 2: Signature — KAV+ScrollView 완전 분리 (터치 충돌 방지) ── */
           <View style={[styles.scrollContent, { flex: 1, backgroundColor: colors.bg }]}>
             <Text style={[styles.stepTitle, { color: colors.text }]}>3. 서명</Text>
             <Text style={[styles.stepDesc, { color: colors.muted }]}>
@@ -593,7 +594,6 @@ window.ReactNativeWebView.postMessage(JSON.stringify({type:'image',data:c.toData
             </View>
           </View>
         )}
-      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
