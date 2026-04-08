@@ -10,6 +10,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Modal,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRoute, useNavigation } from "@react-navigation/native";
@@ -107,15 +109,16 @@ export default function WaiverSignScreen() {
 
   const scrollRef = useRef<ScrollView>(null);
 
-  // Step 2: Canvas Signature via WebView
+  // Step 2: Canvas Signature via Modal + WebView
   const [hasSignature, setHasSignature] = useState(false);
   const [signatureBase64, setSignatureBase64] = useState<string>("");
+  const [signatureModalVisible, setSignatureModalVisible] = useState(false);
   const webViewRef = useRef<WebView>(null);
 
   const signatureHTML = `
 <!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <style>*{margin:0;padding:0;box-sizing:border-box}body{background:${colors.card};overflow:hidden}
-canvas{display:block;width:100%;height:200px;touch-action:none}</style></head><body>
+canvas{display:block;width:100%;height:100vh;touch-action:none}</style></head><body>
 <canvas id="c"></canvas>
 <script>
 var c=document.getElementById('c'),ctx=c.getContext('2d'),drawing=false,hasStrokes=false;
@@ -518,46 +521,33 @@ window.ReactNativeWebView.postMessage(JSON.stringify({type:'image',data:c.toData
           </ScrollView>
       </KeyboardAvoidingView>
       ) : (
-          /* ── Step 2: Signature — KAV+ScrollView 완전 분리 (터치 충돌 방지) ── */
+          /* ── Step 2: Signature — 버튼 클릭 → 전체화면 모달에서 서명 ── */
           <View style={[styles.scrollContent, { flex: 1, backgroundColor: colors.bg }]}>
             <Text style={[styles.stepTitle, { color: colors.text }]}>3. 서명</Text>
             <Text style={[styles.stepDesc, { color: colors.muted }]}>
-              아래 서명란에 손가락으로 직접 서명해주세요
+              아래 버튼을 눌러 서명 화면을 열어주세요
             </Text>
 
-            {/* Signature canvas via WebView */}
-            <View style={[styles.signatureBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <View style={[styles.signatureCanvas, { backgroundColor: colors.card }]}>
-                <WebView
-                  ref={webViewRef}
-                  source={{ html: signatureHTML }}
-                  style={{ height: 200, backgroundColor: colors.card }}
-                  scrollEnabled={false}
-                  bounces={false}
-                  overScrollMode="never"
-                  nestedScrollEnabled={false}
-                  onMessage={handleWebViewMessage}
-                  javaScriptEnabled
-                />
-                {!hasSignature && (
-                  <Text style={[styles.signaturePlaceholder, { position: 'absolute', top: 85, left: 0, right: 0, color: colors.muted }]}>
-                    여기에 서명하세요
-                  </Text>
-                )}
+            {/* 서명 미리보기 또는 서명하기 버튼 */}
+            {hasSignature && signatureBase64 ? (
+              <View style={[styles.signatureBox, { backgroundColor: colors.card, borderColor: colors.border, alignItems: 'center', padding: 16 }]}>
+                <Image source={{ uri: signatureBase64 }} style={{ width: '100%', height: 150, resizeMode: 'contain' }} />
+                <Text style={{ color: colors.success, marginTop: 8, fontWeight: '600' }}>서명 완료</Text>
               </View>
+            ) : (
+              <View style={[styles.signatureBox, { backgroundColor: colors.card, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', height: 180 }]}>
+                <Text style={{ color: colors.muted, fontSize: 15 }}>서명이 필요합니다</Text>
+              </View>
+            )}
 
-              {/* Clear button */}
-              <TouchableOpacity
-                style={[styles.clearBtn, { backgroundColor: colors.card, borderTopColor: colors.border }]}
-                onPress={() => {
-                  webViewRef.current?.injectJavaScript("window.clear();true;");
-                  setHasSignature(false);
-                  setSignatureBase64("");
-                }}
-              >
-                <Text style={[styles.clearBtnText, { color: colors.error }]}>지우기</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              style={[styles.primaryBtn, { backgroundColor: colors.primary, marginTop: 16 }]}
+              onPress={() => setSignatureModalVisible(true)}
+            >
+              <Text style={styles.primaryBtnText}>
+                {hasSignature ? "서명 다시하기" : "서명하기"}
+              </Text>
+            </TouchableOpacity>
 
             <View style={{ marginVertical: 12 }}>
               <Text style={[styles.signInfoText, { color: colors.muted }]}>
@@ -585,7 +575,7 @@ window.ReactNativeWebView.postMessage(JSON.stringify({type:'image',data:c.toData
                     : { backgroundColor: colors.muted, opacity: 0.5 },
                 ]}
                 onPress={handleSubmit}
-                disabled={submitting}
+                disabled={submitting || !hasSignature}
               >
                 <Text style={styles.primaryBtnText}>
                   {submitting ? "제출 중..." : "서명 제출"}
@@ -594,6 +584,57 @@ window.ReactNativeWebView.postMessage(JSON.stringify({type:'image',data:c.toData
             </View>
           </View>
         )}
+
+        {/* ── 서명 전체화면 모달 ── */}
+        <Modal visible={signatureModalVisible} animationType="slide" presentationStyle="fullScreen">
+          <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+              <TouchableOpacity onPress={() => {
+                setSignatureModalVisible(false);
+                setHasSignature(false);
+                setSignatureBase64("");
+                webViewRef.current?.injectJavaScript("window.clear();true;");
+              }}>
+                <Text style={{ color: colors.error, fontSize: 16 }}>취소</Text>
+              </TouchableOpacity>
+              <Text style={{ color: colors.text, fontSize: 17, fontWeight: '700' }}>서명</Text>
+              <TouchableOpacity onPress={() => {
+                webViewRef.current?.injectJavaScript("window.getImage();true;");
+                setTimeout(() => setSignatureModalVisible(false), 500);
+              }}>
+                <Text style={{ color: hasSignature ? colors.primary : colors.muted, fontSize: 16, fontWeight: '600' }}>확인</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ flex: 1, padding: 16 }}>
+              <Text style={{ color: colors.muted, textAlign: 'center', marginBottom: 12, fontSize: 14 }}>
+                아래 영역에 손가락으로 서명해주세요
+              </Text>
+              <View style={{ flex: 1, borderRadius: 12, borderWidth: 2, borderColor: colors.border, overflow: 'hidden', backgroundColor: '#FFFFFF' }}>
+                <WebView
+                  ref={webViewRef}
+                  source={{ html: signatureHTML }}
+                  style={{ flex: 1 }}
+                  scrollEnabled={false}
+                  bounces={false}
+                  overScrollMode="never"
+                  onMessage={handleWebViewMessage}
+                  javaScriptEnabled
+                />
+              </View>
+              <TouchableOpacity
+                style={{ alignSelf: 'center', marginTop: 16, paddingHorizontal: 24, paddingVertical: 10, borderRadius: 8, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}
+                onPress={() => {
+                  webViewRef.current?.injectJavaScript("window.clear();true;");
+                  setHasSignature(false);
+                  setSignatureBase64("");
+                }}
+              >
+                <Text style={{ color: colors.error, fontSize: 15 }}>지우기</Text>
+              </TouchableOpacity>
+            </View>
+          </SafeAreaView>
+        </Modal>
     </SafeAreaView>
   );
 }
