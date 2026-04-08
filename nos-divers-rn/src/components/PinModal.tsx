@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useTheme } from './ThemeContext';
 
 interface PinModalProps {
   visible: boolean;
@@ -24,6 +25,7 @@ export default function PinModal({
   onCancel,
   error,
 }: PinModalProps) {
+  const { colors } = useTheme();
   const [pin, setPin] = useState('');
   const inputRef = useRef<TextInput>(null);
   const shakeAnim = useRef(new Animated.Value(0)).current;
@@ -76,10 +78,10 @@ export default function PinModal({
     >
       <View style={styles.overlay}>
         <Animated.View
-          style={[styles.card, { transform: [{ translateX: shakeAnim }] }]}
+          style={[styles.card, { backgroundColor: colors.card, transform: [{ translateX: shakeAnim }] }]}
         >
           {/* 제목 */}
-          <Text style={styles.title}>{title}</Text>
+          <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
 
           {/* PIN 도트 표시 */}
           <View style={styles.dotsContainer}>
@@ -88,7 +90,7 @@ export default function PinModal({
                 key={index}
                 style={[
                   styles.dot,
-                  index < pin.length ? styles.dotFilled : styles.dotEmpty,
+                  index < pin.length ? [styles.dotFilled, { backgroundColor: colors.primary, borderColor: colors.primary }] : [styles.dotEmpty, { borderColor: colors.border }],
                 ]}
               />
             ))}
@@ -107,11 +109,11 @@ export default function PinModal({
           />
 
           {/* 에러 메시지 */}
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          {error ? <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text> : null}
 
           {/* 취소 버튼 */}
           <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
-            <Text style={styles.cancelText}>취소</Text>
+            <Text style={[styles.cancelText, { color: colors.muted }]}>취소</Text>
           </TouchableOpacity>
         </Animated.View>
       </View>
@@ -127,7 +129,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   card: {
-    backgroundColor: '#ffffff',
     borderRadius: 16,
     padding: 30,
     width: 280,
@@ -136,7 +137,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#023E58',
     marginBottom: 24,
   },
   dotsContainer: {
@@ -156,7 +156,6 @@ const styles = StyleSheet.create({
   },
   dotEmpty: {
     backgroundColor: '#ffffff',
-    borderColor: '#cccccc',
   },
   hiddenInput: {
     position: 'absolute',
@@ -165,7 +164,6 @@ const styles = StyleSheet.create({
     opacity: 0,
   },
   errorText: {
-    color: '#e53935',
     fontSize: 13,
     marginBottom: 16,
     textAlign: 'center',
@@ -177,6 +175,5 @@ const styles = StyleSheet.create({
   },
   cancelText: {
     fontSize: 15,
-    color: '#666666',
   },
 });
