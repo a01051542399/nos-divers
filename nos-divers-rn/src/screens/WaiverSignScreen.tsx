@@ -25,6 +25,7 @@ import {
   WAIVER_CLOSING,
   HEALTH_CHECKLIST,
 } from "../waiver-template";
+import { useTheme } from "../components/ThemeContext";
 
 const STEPS = ["기본정보", "동의서", "서명"];
 
@@ -73,6 +74,7 @@ const PERSONAL_FIELDS: {
 export default function WaiverSignScreen() {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
+  const { colors } = useTheme();
   const tourId: number = route.params?.tourId;
 
   const [step, setStep] = useState(0);
@@ -298,7 +300,7 @@ window.ReactNativeWebView.postMessage(JSON.stringify({type:'image',data:c.toData
 
   if (!dataLoaded) {
     return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={["top"]}>
         <View style={styles.loadingWrap}>
           <ActivityIndicator size="large" color="#2196F3" />
           <Text style={styles.loadingText}>로딩 중...</Text>

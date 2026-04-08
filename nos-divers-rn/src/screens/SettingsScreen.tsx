@@ -29,9 +29,11 @@ const THEME_MODES: { value: ThemeMode; label: string }[] = [
 export default function SettingsScreen() {
   const navigation = useNavigation<any>();
   const { user, signOut } = useAuth();
-  const { mode } = useTheme();
+  const { mode, colors } = useTheme();
   const { settings, refresh: refreshSettings } = useAppSettings();
   const { toast, confirm } = useToast();
+
+  const isOAuth = user?.app_metadata?.provider && user.app_metadata.provider !== 'email';
 
   // 비밀번호 변경 모달 상태
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -138,71 +140,71 @@ export default function SettingsScreen() {
   const hasPassword = Boolean(settings.accountPassword);
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
-      <Text style={styles.title}>설정</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={["top"]}>
+      <Text style={[styles.title, { color: colors.text }]}>설정</Text>
       <ScrollView style={styles.scroll}>
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: colors.card }]}>
           <View style={styles.appInfoRow}>
             <Image
               source={require("../../assets/logo-dolphin-official.png")}
               style={{ width: 52, height: 52, borderRadius: 12 }}
             />
             <View style={styles.appInfoText}>
-              <Text style={styles.cardTitle}>NoS Divers</Text>
-              <Text style={styles.cardSubtitle}>SINCE 2019 DIVING TEAM</Text>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>NoS Divers</Text>
+              <Text style={[styles.cardSubtitle, { color: colors.muted }]}>SINCE 2019 DIVING TEAM</Text>
             </View>
           </View>
-          <Text style={styles.cardDesc}>
+          <Text style={[styles.cardDesc, { color: colors.muted }]}>
             다이빙 투어 비용 정산과 면책동의서 서명을 간편하게 관리하세요.
           </Text>
         </View>
 
-        <Text style={styles.sectionTitle}>계정</Text>
-        <View style={styles.card}>
-          <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate("Profile")}>
-            <Text style={styles.menuText}>내 프로필</Text>
-            <Text style={styles.menuValue}>{user?.email ?? ""} ›</Text>
+        <Text style={[styles.sectionTitle, { color: colors.muted }]}>계정</Text>
+        <View style={[styles.card, { backgroundColor: colors.card }]}>
+          <TouchableOpacity style={[styles.menuItem, { borderBottomColor: colors.bg }]} onPress={() => navigation.navigate("Profile")}>
+            <Text style={[styles.menuText, { color: colors.text }]}>내 프로필</Text>
+            <Text style={[styles.menuValue, { color: colors.muted }]}>{user?.email ?? ""} ›</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem} onPress={openPasswordModal}>
-            <Text style={styles.menuText}>비밀번호 변경</Text>
-            <Text style={styles.menuValue}>
-              {hasPassword ? "설정됨 ›" : "미설정 ›"}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem} onPress={handleSignOut}>
-            <Text style={[styles.menuText, { color: "#2196F3" }]}>로그아웃</Text>
-          </TouchableOpacity>
-        </View>
-
-        <Text style={styles.sectionTitle}>설정</Text>
-        <View style={styles.card}>
-          <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate("SettingsDisplay")}>
-            <Text style={styles.menuText}>화면 모드</Text>
-            <Text style={styles.menuValue}>{currentModeLabel} ›</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate("HiddenTours")}>
-            <Text style={styles.menuText}>숨긴 투어</Text>
-            <Text style={styles.menuValue}>›</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate("Trash")}>
-            <Text style={styles.menuText}>임시보관함</Text>
-            <Text style={styles.menuValue}>›</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem} onPress={openAdminModal}>
-            <Text style={styles.menuText}>관리자 모드</Text>
-            <Text style={styles.menuValue}>›</Text>
+          {!isOAuth && (
+            <TouchableOpacity style={[styles.menuItem, { borderBottomColor: colors.bg }]} onPress={openPasswordModal}>
+              <Text style={[styles.menuText, { color: colors.text }]}>비밀번호 변경</Text>
+              <Text style={[styles.menuValue, { color: colors.muted }]}>비밀번호 변경 ›</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity style={[styles.menuItem, { borderBottomColor: colors.bg }]} onPress={handleSignOut}>
+            <Text style={[styles.menuText, { color: colors.primary }]}>로그아웃</Text>
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.sectionTitle}>정보</Text>
-        <View style={styles.card}>
-          <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate("SettingsGuide")}>
-            <Text style={styles.menuText}>사용설명서</Text>
-            <Text style={styles.menuValue}>›</Text>
+        <Text style={[styles.sectionTitle, { color: colors.muted }]}>설정</Text>
+        <View style={[styles.card, { backgroundColor: colors.card }]}>
+          <TouchableOpacity style={[styles.menuItem, { borderBottomColor: colors.bg }]} onPress={() => navigation.navigate("SettingsDisplay")}>
+            <Text style={[styles.menuText, { color: colors.text }]}>화면 모드</Text>
+            <Text style={[styles.menuValue, { color: colors.muted }]}>{currentModeLabel} ›</Text>
           </TouchableOpacity>
-          <View style={styles.menuItem}>
-            <Text style={styles.menuText}>버전</Text>
-            <Text style={styles.menuValue}>2.0.0</Text>
+          <TouchableOpacity style={[styles.menuItem, { borderBottomColor: colors.bg }]} onPress={() => navigation.navigate("HiddenTours")}>
+            <Text style={[styles.menuText, { color: colors.text }]}>숨긴 투어</Text>
+            <Text style={[styles.menuValue, { color: colors.muted }]}>›</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.menuItem, { borderBottomColor: colors.bg }]} onPress={() => navigation.navigate("Trash")}>
+            <Text style={[styles.menuText, { color: colors.text }]}>임시보관함</Text>
+            <Text style={[styles.menuValue, { color: colors.muted }]}>›</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.menuItem, { borderBottomColor: colors.bg }]} onPress={openAdminModal}>
+            <Text style={[styles.menuText, { color: colors.text }]}>관리자 모드</Text>
+            <Text style={[styles.menuValue, { color: colors.muted }]}>›</Text>
+          </TouchableOpacity>
+        </View>
+
+        <Text style={[styles.sectionTitle, { color: colors.muted }]}>정보</Text>
+        <View style={[styles.card, { backgroundColor: colors.card }]}>
+          <TouchableOpacity style={[styles.menuItem, { borderBottomColor: colors.bg }]} onPress={() => navigation.navigate("SettingsGuide")}>
+            <Text style={[styles.menuText, { color: colors.text }]}>사용설명서</Text>
+            <Text style={[styles.menuValue, { color: colors.muted }]}>›</Text>
+          </TouchableOpacity>
+          <View style={[styles.menuItem, { borderBottomColor: colors.bg }]}>
+            <Text style={[styles.menuText, { color: colors.text }]}>버전</Text>
+            <Text style={[styles.menuValue, { color: colors.muted }]}>2.0.0</Text>
           </View>
         </View>
       </ScrollView>

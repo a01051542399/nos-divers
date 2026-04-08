@@ -1,14 +1,14 @@
 import React, { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 import * as db from "./src/lib/supabase-store";
-import { NavigationContainer } from "@react-navigation/native";
+import { NavigationContainer, DarkTheme, DefaultTheme } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { AuthProvider, useAuth } from "./src/lib/AuthContext";
 import { ToastProvider } from "./src/components/Toast";
-import { ThemeProvider } from "./src/components/ThemeContext";
+import { ThemeProvider, useTheme } from "./src/components/ThemeContext";
 import { Ionicons } from "@expo/vector-icons";
 
 import LoginScreen from "./src/screens/LoginScreen";
@@ -120,15 +120,16 @@ function SettingsStack() {
 }
 
 function MainTabs() {
+  const { colors } = useTheme();
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#2196F3",
-        tabBarInactiveTintColor: "#3D7A94",
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.muted,
         tabBarStyle: {
-          backgroundColor: "#fff",
-          borderTopColor: "#E8F4F8",
+          backgroundColor: colors.card,
+          borderTopColor: colors.border,
           paddingBottom: 8,
           paddingTop: 4,
           height: 68,
@@ -178,6 +179,7 @@ function MainTabs() {
 
 function AppContent() {
   const { user, loading } = useAuth();
+  const { colors } = useTheme();
 
   useEffect(() => {
     if (user) {
@@ -187,8 +189,8 @@ function AppContent() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#E8F4F8" }}>
-        <ActivityIndicator size="large" color="#2196F3" />
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.bg }}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -200,18 +202,29 @@ function AppContent() {
   return <MainTabs />;
 }
 
+function ThemedApp() {
+  const { theme, colors } = useTheme();
+  const navTheme = theme === 'dark'
+    ? { ...DarkTheme, colors: { ...DarkTheme.colors, background: colors.bg, card: colors.card, text: colors.text, border: colors.border } }
+    : { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: colors.bg, card: colors.card, text: colors.text, border: colors.border } };
+
+  return (
+    <ToastProvider>
+      <NavigationContainer theme={navTheme}>
+        <AuthProvider>
+          <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
+          <AppContent />
+        </AuthProvider>
+      </NavigationContainer>
+    </ToastProvider>
+  );
+}
+
 export default function App() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <ToastProvider>
-          <NavigationContainer>
-            <AuthProvider>
-              <StatusBar style="dark" />
-              <AppContent />
-            </AuthProvider>
-          </NavigationContainer>
-        </ToastProvider>
+        <ThemedApp />
       </ThemeProvider>
     </SafeAreaProvider>
   );

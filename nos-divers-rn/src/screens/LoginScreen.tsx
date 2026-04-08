@@ -14,10 +14,12 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { useAuth } from "../lib/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "../components/ThemeContext";
 
 export default function LoginScreen() {
   const navigation = useNavigation<any>();
   const { signInWithEmail, signInWithKakao, signInWithGoogle } = useAuth();
+  const { colors } = useTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -35,7 +37,7 @@ export default function LoginScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.bg }]}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <View style={styles.content}>
@@ -44,26 +46,26 @@ export default function LoginScreen() {
           style={styles.logo}
           resizeMode="contain"
         />
-        <Text style={styles.title}>NoS Divers</Text>
-        <Text style={styles.subtitle}>SINCE 2019 DIVING TEAM</Text>
+        <Text style={[styles.title, { color: colors.text }]}>NoS Divers</Text>
+        <Text style={[styles.subtitle, { color: colors.muted }]}>SINCE 2019 DIVING TEAM</Text>
 
         <View style={styles.form}>
-          <Text style={styles.label}>이메일</Text>
+          <Text style={[styles.label, { color: colors.text }]}>이메일</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
             placeholder="example@email.com"
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.muted}
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
           />
 
-          <Text style={styles.label}>비밀번호</Text>
+          <Text style={[styles.label, { color: colors.text }]}>비밀번호</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
             placeholder="비밀번호 입력"
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.muted}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -78,7 +80,7 @@ export default function LoginScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.loginButton}
+            style={[styles.loginButton, { backgroundColor: colors.primary }]}
             onPress={handleEmailLogin}
             disabled={loading}
           >
@@ -91,16 +93,16 @@ export default function LoginScreen() {
 
           {/* Sign up link */}
           <View style={styles.signupRow}>
-            <Text style={styles.signupText}>계정이 없으신가요? </Text>
+            <Text style={[styles.signupText, { color: colors.muted }]}>계정이 없으신가요? </Text>
             <TouchableOpacity onPress={() => navigation.navigate("Signup")}>
-              <Text style={styles.signupLink}>회원가입</Text>
+              <Text style={[styles.signupLink, { color: colors.primary }]}>회원가입</Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>또는</Text>
-            <View style={styles.dividerLine} />
+            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+            <Text style={[styles.dividerText, { color: colors.muted }]}>또는</Text>
+            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
           </View>
 
           <TouchableOpacity style={styles.kakaoButton} onPress={signInWithKakao}>

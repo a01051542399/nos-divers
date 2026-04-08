@@ -17,6 +17,7 @@ import { useProfile, useAppSettings } from "../hooks/useSupabase";
 import { useAuth } from "../lib/AuthContext";
 import { useToast } from "../components/Toast";
 import type { UserProfile } from "../store";
+import { useTheme } from "../components/ThemeContext";
 
 const DIVING_LEVELS = ["OW", "AOW", "레스큐", "DM", "강사", "기타"];
 
@@ -43,6 +44,7 @@ export default function ProfileScreen() {
   const { profile, loading, updateProfile } = useProfile();
   const { settings } = useAppSettings();
   const { toast } = useToast();
+  const { colors } = useTheme();
 
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<UserProfile>({
@@ -131,25 +133,25 @@ export default function ProfileScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={["top"]}>
         <View style={styles.center}>
-          <ActivityIndicator size="large" color="#0891b2" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={["top"]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack}>
-          <Text style={styles.backBtn}>← 설정</Text>
+          <Text style={[styles.backBtn, { color: colors.primary }]}>← 설정</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>내 프로필</Text>
+        <Text style={[styles.title, { color: colors.text }]}>내 프로필</Text>
         <TouchableOpacity
           onPress={editing ? handleCancel : handleEditPress}
         >
-          <Text style={styles.editBtn}>{editing ? "취소" : "수정"}</Text>
+          <Text style={[styles.editBtn, { color: colors.primary }]}>{editing ? "취소" : "수정"}</Text>
         </TouchableOpacity>
       </View>
 
@@ -160,7 +162,7 @@ export default function ProfileScreen() {
         <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled">
           {/* 읽기 모드 */}
           {!editing && (
-            <View style={styles.card}>
+            <View style={[styles.card, { backgroundColor: colors.card }]}>
               <InfoRow label="이름" value={profile.name || "-"} />
               <InfoRow label="이메일" value={profile.email || "-"} />
               <InfoRow label="등급" value={profile.grade || "멤버"} badge />
@@ -174,7 +176,7 @@ export default function ProfileScreen() {
 
           {/* 편집 모드 */}
           {editing && (
-            <View style={styles.card}>
+            <View style={[styles.card, { backgroundColor: colors.card }]}>
               <FieldInput
                 label="이름 *"
                 value={form.name}

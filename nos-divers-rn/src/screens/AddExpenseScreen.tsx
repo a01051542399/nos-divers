@@ -28,7 +28,7 @@ import * as db from "../lib/supabase-store";
 import { formatKRW } from "../store";
 import type { Participant, Expense } from "../types";
 import { useToast } from "../components/Toast";
-// Theme: using consistent light colors
+import { useTheme } from "../components/ThemeContext";
 
 const CURRENCIES = [
   { code: "KRW", symbol: "\u20A9", name: "\uD55C\uAD6D \uC6D0" },
@@ -70,16 +70,17 @@ export default function AddExpenseScreen() {
   const route = useRoute<any>();
   const navigation = useNavigation();
   const { toast } = useToast();
+  const { colors } = useTheme();
   const C = {
-    bg: "#E8F4F8",
-    card: "#FFFFFF",
-    border: "#D1E6ED",
-    text: "#023E58",
-    muted: "#3D7A94",
-    accent: "#2196F3",
-    green: "#4CAF50",
-    red: "#F44336",
-    orange: "#FF9800",
+    bg: colors.bg,
+    card: colors.card,
+    border: colors.border,
+    text: colors.text,
+    muted: colors.muted,
+    accent: colors.primary,
+    green: colors.success,
+    red: colors.error,
+    orange: colors.warning,
   };
 
   const tourId: number = route.params?.tourId;

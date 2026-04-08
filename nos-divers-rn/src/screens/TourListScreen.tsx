@@ -22,6 +22,7 @@ import * as db from "../lib/supabase-store";
 import PinModal from "../components/PinModal";
 import { useToast } from "../components/Toast";
 import { useAppSettings } from "../hooks/useSupabase";
+import { useTheme } from "../components/ThemeContext";
 
 // ─── 투어 수정 모달 ───
 
@@ -123,6 +124,7 @@ export default function TourListScreen() {
   const navigation = useNavigation<any>();
   const { toast, confirm } = useToast();
   const { settings, refresh: refreshSettings } = useAppSettings();
+  const { colors } = useTheme();
 
   const [tours, setTours] = useState<Tour[]>([]);
   const [loading, setLoading] = useState(true);
@@ -295,12 +297,12 @@ export default function TourListScreen() {
 
   const renderTourCard = ({ item }: { item: Tour }) => (
     <TouchableOpacity
-      style={styles.card}
+      style={[styles.card, { backgroundColor: colors.card }]}
       activeOpacity={0.7}
       onPress={() => navigation.navigate("TourDetail", { tourId: item.id })}
     >
       <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle} numberOfLines={1}>
+        <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={1}>
           {item.name}
         </Text>
         <TouchableOpacity
@@ -308,32 +310,32 @@ export default function TourListScreen() {
           onPress={() => handleMorePress(item)}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Text style={styles.moreBtnText}>···</Text>
+          <Text style={[styles.moreBtnText, { color: colors.muted }]}>···</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.cardMeta}>
         {item.date ? (
-          <Text style={styles.cardMetaText}>{formatTourDate(item.date)}</Text>
+          <Text style={[styles.cardMetaText, { color: colors.muted }]}>{formatTourDate(item.date)}</Text>
         ) : null}
         {item.location ? (
-          <Text style={styles.cardMetaText}>
+          <Text style={[styles.cardMetaText, { color: colors.muted }]}>
             {item.date ? "  ·  " : ""}
             {item.location}
           </Text>
         ) : null}
       </View>
 
-      <View style={styles.cardFooter}>
-        <Text style={styles.cardFooterText}>
+      <View style={[styles.cardFooter, { borderTopColor: colors.border }]}>
+        <Text style={[styles.cardFooterText, { color: colors.muted }]}>
           주최: {item.createdBy || "-"}
         </Text>
         <View style={styles.cardStats}>
-          <Text style={styles.cardFooterText}>
+          <Text style={[styles.cardFooterText, { color: colors.muted }]}>
             {item.participants.length}명
           </Text>
           {item.expenses.length > 0 && (
-            <Text style={styles.cardExpense}>
+            <Text style={[styles.cardExpense, { color: colors.primary }]}>
               {formatCurrency(
                 item.expenses.reduce((s, e) => s + e.amount, 0)
               )}
@@ -348,9 +350,9 @@ export default function TourListScreen() {
     if (loading) return null;
     return (
       <View style={styles.emptyState}>
-        <Text style={styles.emptyIcon}>~</Text>
-        <Text style={styles.emptyTitle}>투어가 없습니다</Text>
-        <Text style={styles.emptySubtitle}>
+        <Text style={[styles.emptyIcon, { color: colors.primary }]}>~</Text>
+        <Text style={[styles.emptyTitle, { color: colors.text }]}>투어가 없습니다</Text>
+        <Text style={[styles.emptySubtitle, { color: colors.muted }]}>
           새 다이빙 투어를 만들거나{"\n"}입장코드로 투어에 참여하세요
         </Text>
       </View>
@@ -358,7 +360,7 @@ export default function TourListScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={["top"]}>
       {/* Logo */}
       <Image
         source={require("../../assets/logo-full-official.png")}
@@ -367,16 +369,16 @@ export default function TourListScreen() {
 
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>다이빙 투어</Text>
+        <Text style={[styles.title, { color: colors.text }]}>다이빙 투어</Text>
         <View style={styles.headerButtons}>
           <TouchableOpacity
-            style={styles.joinButton}
+            style={[styles.joinButton, { borderColor: colors.primary }]}
             onPress={() => navigation.navigate("JoinTour")}
           >
-            <Text style={styles.joinButtonText}>참여</Text>
+            <Text style={[styles.joinButtonText, { color: colors.primary }]}>참여</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.newButton}
+            style={[styles.newButton, { backgroundColor: colors.primary }]}
             onPress={() => navigation.navigate("CreateTour")}
           >
             <Text style={styles.newButtonText}>+ 새 투어</Text>
@@ -387,8 +389,8 @@ export default function TourListScreen() {
       {/* Tour List */}
       {loading ? (
         <View style={styles.loadingState}>
-          <ActivityIndicator size="large" color="#2196F3" />
-          <Text style={styles.loadingText}>로딩 중...</Text>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.muted }]}>로딩 중...</Text>
         </View>
       ) : (
         <FlatList
@@ -403,8 +405,8 @@ export default function TourListScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor="#2196F3"
-              colors={["#2196F3"]}
+              tintColor={colors.primary}
+              colors={[colors.primary]}
             />
           }
           showsVerticalScrollIndicator={false}

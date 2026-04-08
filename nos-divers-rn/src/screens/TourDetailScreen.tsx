@@ -2,7 +2,7 @@
  * 투어 상세 화면
  * 3개 탭: 참여자 / 비용 / 정산
  */
-import React, { useState, useMemo, useEffect, useRef } from "react";
+import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -25,12 +25,12 @@ import { useTourDetail, useComments, useProfile, useWaivers } from "../hooks/use
 import { calculateSettlement, formatKRW, formatDate } from "../store";
 import * as db from "../lib/supabase-store";
 import type { Expense } from "../types";
-import { useRoute, useNavigation } from "@react-navigation/native";
+import { useRoute, useNavigation, useFocusEffect } from "@react-navigation/native";
 import PinModal from "../components/PinModal";
 import { useToast } from "../components/Toast";
 import { exportSettlementPDF } from "../utils/export-pdf";
 import { exportSettlementExcel } from "../utils/export-excel";
-// Theme: using consistent light colors (not dynamic theme)
+import { useTheme } from "../components/ThemeContext";
 
 type Tab = "participants" | "expenses" | "settlement";
 
@@ -40,23 +40,24 @@ type ExpensePinAction = "expenseEdit" | "expenseDelete" | null;
 export default function TourDetailScreen() {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
+  const { colors } = useTheme();
   const C = {
-    bg: "#E8F4F8",
-    card: "#FFFFFF",
-    border: "#D1E6ED",
-    text: "#023E58",
-    muted: "#3D7A94",
-    accent: "#2196F3",
-    green: "#4CAF50",
-    red: "#F44336",
-    orange: "#FF9800",
-    tabActive: "#2196F3",
-    tabInactive: "#3D7A94",
+    bg: colors.bg,
+    card: colors.card,
+    border: colors.border,
+    text: colors.text,
+    muted: colors.muted,
+    accent: colors.primary,
+    green: colors.success,
+    red: colors.error,
+    orange: colors.warning,
+    tabActive: colors.primary,
+    tabInactive: colors.muted,
   };
   const tourId = route.params?.tourId as number;
   const onBack = () => navigation.goBack();
-  const styles = useMemo(() => makeStyles(C), []);
-  const editStyles = useMemo(() => makeEditStyles(C), []);
+  const styles = useMemo(() => makeStyles(C), [colors]);
+  const editStyles = useMemo(() => makeEditStyles(C), [colors]);
   const { tour, loading, refresh } = useTourDetail(tourId);
   const {
     comments,
@@ -84,8 +85,8 @@ export default function TourDetailScreen() {
   // 비용 카드 펼침
   const [expandedExpenseId, setExpandedExpenseId] = useState<number | null>(null);
 
-  // 카테고리 접힘 상태
-  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
+  // 카테고리 접힘 상태 (기본값: 모두 접힘)
+  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({ '다이빙': true, '숙박': true, '식비': true, '기타': true });
 
   const toggleCategory = (cat: string) => {
     setCollapsedCategories(prev => ({ ...prev, [cat]: !prev[cat] }));
@@ -108,6 +109,13 @@ export default function TourDetailScreen() {
   const [editDate, setEditDate] = useState("");
   const [editLocation, setEditLocation] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // 화면 포커스 시 데이터 자동 갱신 (비용 추가 후 목록 반영)
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+    }, [refresh])
+  );
 
   const settlements = useMemo(
     () => (tour ? calculateSettlement(tour) : []),
