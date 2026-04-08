@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useTheme } from "./ThemeContext";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -52,6 +53,7 @@ const ToastContext = createContext<ToastContextValue | null>(null);
 // ─── Provider ────────────────────────────────────────────────────────────────
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
+  const { colors } = useTheme();
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [confirmState, setConfirmState] = useState<ConfirmState>({
     visible: false,
@@ -112,10 +114,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             key={item.id}
             style={[
               styles.toastCard,
-              { opacity: item.opacity, borderLeftColor: TYPE_COLORS[item.type] },
+              { opacity: item.opacity, borderLeftColor: TYPE_COLORS[item.type], backgroundColor: colors.card },
             ]}
           >
-            <Text style={styles.toastText}>{item.message}</Text>
+            <Text style={[styles.toastText, { color: colors.text }]}>{item.message}</Text>
           </Animated.View>
         ))}
       </View>
@@ -128,8 +130,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         onRequestClose={() => handleConfirmClose(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalMessage}>{confirmState.message}</Text>
+          <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
+            <Text style={[styles.modalMessage, { color: colors.text }]}>{confirmState.message}</Text>
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
@@ -139,7 +141,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 <Text style={styles.cancelText}>취소</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modalButton, styles.confirmButton]}
+                style={[styles.modalButton, styles.confirmButton, { backgroundColor: colors.primary }]}
                 onPress={() => handleConfirmClose(true)}
                 activeOpacity={0.75}
               >
@@ -176,7 +178,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   toastCard: {
-    backgroundColor: "#fff",
     borderRadius: 8,
     borderLeftWidth: 4,
     paddingVertical: 12,
@@ -189,7 +190,6 @@ const styles = StyleSheet.create({
   },
   toastText: {
     fontSize: 14,
-    color: "#1A2B3C",
     lineHeight: 20,
   },
 
@@ -203,7 +203,6 @@ const styles = StyleSheet.create({
   },
   modalCard: {
     width: "100%",
-    backgroundColor: "#fff",
     borderRadius: 12,
     paddingTop: 24,
     paddingBottom: 16,
@@ -216,7 +215,6 @@ const styles = StyleSheet.create({
   },
   modalMessage: {
     fontSize: 15,
-    color: "#1A2B3C",
     lineHeight: 22,
     marginBottom: 20,
     textAlign: "center",
@@ -235,7 +233,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#F0F0F0",
   },
   confirmButton: {
-    backgroundColor: "#2196F3",
+    borderRadius: 8,
   },
   cancelText: {
     fontSize: 15,

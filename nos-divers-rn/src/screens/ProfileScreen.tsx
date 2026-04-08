@@ -206,21 +206,26 @@ export default function ProfileScreen() {
                 keyboardType="number-pad"
               />
 
-              <Text style={styles.fieldLabel}>다이빙 레벨</Text>
+              <Text style={[styles.fieldLabel, { color: colors.muted }]}>다이빙 레벨</Text>
               <View style={styles.levelRow}>
                 {DIVING_LEVELS.map((level) => (
                   <TouchableOpacity
                     key={level}
                     style={[
                       styles.levelChip,
-                      form.divingLevel === level && styles.levelChipActive,
+                      {
+                        backgroundColor: form.divingLevel === level ? colors.primary : colors.inputBg,
+                        borderColor: form.divingLevel === level ? colors.primary : colors.border,
+                      },
                     ]}
                     onPress={() => setForm({ ...form, divingLevel: level })}
                   >
                     <Text
                       style={[
                         styles.levelChipText,
-                        form.divingLevel === level && styles.levelChipTextActive,
+                        {
+                          color: form.divingLevel === level ? "#fff" : colors.muted,
+                        },
                       ]}
                     >
                       {level}
@@ -237,7 +242,7 @@ export default function ProfileScreen() {
               />
 
               <TouchableOpacity
-                style={[styles.saveBtn, saving && styles.saveBtnDisabled]}
+                style={[styles.saveBtn, { backgroundColor: colors.primary }, saving && styles.saveBtnDisabled]}
                 onPress={handleSave}
                 disabled={saving}
               >
@@ -263,19 +268,19 @@ export default function ProfileScreen() {
           style={styles.modalOverlay}
           behavior={Platform.OS === "ios" ? "padding" : undefined}
         >
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>비밀번호 입력</Text>
-            <Text style={styles.modalDesc}>프로필 수정을 위해 비밀번호를 입력하세요</Text>
+          <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>비밀번호 입력</Text>
+            <Text style={[styles.modalDesc, { color: colors.muted }]}>프로필 수정을 위해 비밀번호를 입력하세요</Text>
 
             <TextInput
-              style={[styles.modalInput, pinError ? styles.modalInputError : null]}
+              style={[styles.modalInput, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }, pinError ? styles.modalInputError : null]}
               value={pinInput}
               onChangeText={(v) => {
                 setPinInput(v);
                 if (pinError) setPinError("");
               }}
               placeholder="비밀번호"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={colors.muted}
               secureTextEntry
               autoCapitalize="none"
               autoFocus
@@ -292,7 +297,7 @@ export default function ProfileScreen() {
                 <Text style={styles.cancelButtonText}>취소</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modalButton, styles.confirmButton]}
+                style={[styles.modalButton, styles.confirmButton, { backgroundColor: colors.primary }]}
                 onPress={handlePinConfirm}
               >
                 <Text style={styles.confirmButtonText}>확인</Text>
@@ -318,15 +323,16 @@ function InfoRow({
   badge?: boolean;
   last?: boolean;
 }) {
+  const { colors } = useTheme();
   return (
-    <View style={[styles.infoRow, last && { borderBottomWidth: 0 }]}>
-      <Text style={styles.infoLabel}>{label}</Text>
+    <View style={[styles.infoRow, { borderBottomColor: colors.border }, last && { borderBottomWidth: 0 }]}>
+      <Text style={[styles.infoLabel, { color: colors.muted }]}>{label}</Text>
       {badge ? (
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>{value}</Text>
+        <View style={[styles.badge, { backgroundColor: colors.inputBg }]}>
+          <Text style={[styles.badgeText, { color: colors.primary }]}>{value}</Text>
         </View>
       ) : (
-        <Text style={styles.infoValue}>{value}</Text>
+        <Text style={[styles.infoValue, { color: colors.text }]}>{value}</Text>
       )}
     </View>
   );
@@ -347,15 +353,16 @@ function FieldInput({
   keyboardType?: "default" | "email-address" | "number-pad";
   autoCapitalize?: "none" | "sentences";
 }) {
+  const { colors } = useTheme();
   return (
     <View style={styles.fieldGroup}>
-      <Text style={styles.fieldLabel}>{label}</Text>
+      <Text style={[styles.fieldLabel, { color: colors.muted }]}>{label}</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor="#9ca3af"
+        placeholderTextColor={colors.muted}
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize}
       />
@@ -438,18 +445,14 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#3D7A94",
     marginBottom: 6,
   },
   input: {
-    backgroundColor: "#F8FAFC",
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
-    color: "#023E58",
   },
   levelRow: {
     flexDirection: "row",
@@ -461,24 +464,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: "#F1F5F9",
     borderWidth: 1,
-    borderColor: "#E2E8F0",
   },
   levelChipActive: {
-    backgroundColor: "#0891b2",
-    borderColor: "#0891b2",
+    borderWidth: 1,
   },
   levelChipText: {
     fontSize: 13,
-    color: "#3D7A94",
     fontWeight: "500",
   },
   levelChipTextActive: {
     color: "#fff",
   },
   saveBtn: {
-    backgroundColor: "#0891b2",
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: "center",
@@ -502,7 +500,6 @@ const styles = StyleSheet.create({
   },
   modalCard: {
     width: "100%",
-    backgroundColor: "#fff",
     borderRadius: 16,
     padding: 24,
     shadowColor: "#000",
@@ -514,25 +511,20 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#023E58",
     marginBottom: 6,
     textAlign: "center",
   },
   modalDesc: {
     fontSize: 13,
-    color: "#3D7A94",
     textAlign: "center",
     marginBottom: 20,
   },
   modalInput: {
-    backgroundColor: "#F8FAFC",
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
-    color: "#023E58",
     marginBottom: 6,
   },
   modalInputError: {
@@ -564,7 +556,7 @@ const styles = StyleSheet.create({
     color: "#666",
   },
   confirmButton: {
-    backgroundColor: "#0891b2",
+    borderRadius: 10,
   },
   confirmButtonText: {
     fontSize: 15,

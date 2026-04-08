@@ -34,6 +34,7 @@ interface EditTourModalProps {
 }
 
 function EditTourModal({ visible, tour, onClose, onSave }: EditTourModalProps) {
+  const { colors } = useTheme();
   const [name, setName] = useState("");
   const [date, setDate] = useState("");
   const [location, setLocation] = useState("");
@@ -66,36 +67,36 @@ function EditTourModal({ visible, tour, onClose, onSave }: EditTourModalProps) {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={editStyles.overlay}
       >
-        <View style={editStyles.card}>
-          <Text style={editStyles.title}>투어 수정</Text>
+        <View style={[editStyles.card, { backgroundColor: colors.card }]}>
+          <Text style={[editStyles.title, { color: colors.text }]}>투어 수정</Text>
 
-          <Text style={editStyles.label}>투어 이름 *</Text>
+          <Text style={[editStyles.label, { color: colors.muted }]}>투어 이름 *</Text>
           <TextInput
-            style={editStyles.input}
+            style={[editStyles.input, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
             value={name}
             onChangeText={setName}
             placeholder="투어 이름"
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.muted}
           />
 
-          <Text style={editStyles.label}>날짜 (YYMMDD)</Text>
+          <Text style={[editStyles.label, { color: colors.muted }]}>날짜 (YYMMDD)</Text>
           <TextInput
-            style={editStyles.input}
+            style={[editStyles.input, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
             value={date}
             onChangeText={setDate}
             placeholder="예: 250315"
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.muted}
             keyboardType="numeric"
             maxLength={6}
           />
 
-          <Text style={editStyles.label}>장소</Text>
+          <Text style={[editStyles.label, { color: colors.muted }]}>장소</Text>
           <TextInput
-            style={editStyles.input}
+            style={[editStyles.input, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
             value={location}
             onChangeText={setLocation}
             placeholder="예: 제주도"
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.muted}
           />
 
           <View style={editStyles.buttons}>
@@ -103,7 +104,7 @@ function EditTourModal({ visible, tour, onClose, onSave }: EditTourModalProps) {
               <Text style={editStyles.cancelText}>취소</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[editStyles.saveBtn, saving && editStyles.btnDisabled]}
+              style={[editStyles.saveBtn, { backgroundColor: colors.primary }, saving && editStyles.btnDisabled]}
               onPress={handleSave}
               disabled={saving}
             >
@@ -596,7 +597,6 @@ const editStyles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   card: {
-    backgroundColor: "#fff",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 24,
@@ -605,25 +605,20 @@ const editStyles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#023E58",
     marginBottom: 20,
     textAlign: "center",
   },
   label: {
     fontSize: 13,
-    color: "#3D7A94",
     marginBottom: 6,
     marginTop: 12,
   },
   input: {
-    backgroundColor: "#F4F8FB",
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#D0E8F0",
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
-    color: "#023E58",
   },
   buttons: {
     flexDirection: "row",
@@ -646,7 +641,6 @@ const editStyles = StyleSheet.create({
     flex: 1,
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: "#2196F3",
     alignItems: "center",
   },
   saveText: {

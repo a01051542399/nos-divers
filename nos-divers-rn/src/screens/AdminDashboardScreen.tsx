@@ -71,6 +71,7 @@ function StatCard({ label, value, color, icon }: StatCardProps) {
 // ─── Tab 1: 통계 ─────────────────────────────────────────────────────────────
 
 function StatsTab() {
+  const { colors } = useTheme();
   const [stats, setStats] = useState<DataStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -97,7 +98,7 @@ function StatsTab() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#2196F3" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -105,7 +106,7 @@ function StatsTab() {
   if (!stats) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.emptyText}>데이터를 불러올 수 없습니다</Text>
+        <Text style={[styles.emptyText, { color: colors.muted }]}>데이터를 불러올 수 없습니다</Text>
       </View>
     );
   }
@@ -116,7 +117,7 @@ function StatsTab() {
       contentContainerStyle={styles.tabContentInner}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
-      <Text style={styles.sectionTitle}>데이터 현황</Text>
+      <Text style={[styles.sectionTitle, { color: colors.muted }]}>데이터 현황</Text>
       <View style={styles.statsGrid}>
         <StatCard label="투어" value={String(stats.tourCount)} color="#2196F3" icon="🌊" />
         <StatCard label="참여자" value={String(stats.participantCount)} color="#4CAF50" icon="👥" />
@@ -125,11 +126,11 @@ function StatsTab() {
         <StatCard label="댓글" value={String(stats.commentCount)} color="#F44336" icon="💬" />
       </View>
 
-      <Text style={styles.sectionTitle}>총 비용</Text>
-      <View style={styles.totalCard}>
+      <Text style={[styles.sectionTitle, { color: colors.muted }]}>총 비용</Text>
+      <View style={[styles.totalCard, { backgroundColor: colors.card }]}>
         <Text style={styles.totalIcon}>💰</Text>
-        <Text style={styles.totalAmount}>{formatKRW(stats.totalExpenseKRW)}</Text>
-        <Text style={styles.totalLabel}>전체 투어 누적 비용 (KRW 환산)</Text>
+        <Text style={[styles.totalAmount, { color: colors.text }]}>{formatKRW(stats.totalExpenseKRW)}</Text>
+        <Text style={[styles.totalLabel, { color: colors.muted }]}>전체 투어 누적 비용 (KRW 환산)</Text>
       </View>
     </ScrollView>
   );
@@ -138,6 +139,7 @@ function StatsTab() {
 // ─── Tab 2: 투어 ─────────────────────────────────────────────────────────────
 
 function ToursTab() {
+  const { colors } = useTheme();
   const { toast, confirm } = useToast();
   const [tours, setTours] = useState<Tour[]>([]);
   const [filtered, setFiltered] = useState<Tour[]>([]);
@@ -205,7 +207,7 @@ function ToursTab() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#2196F3" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -214,11 +216,11 @@ function ToursTab() {
     <View style={styles.tabContent}>
       <View style={styles.searchRow}>
         <TextInput
-          style={styles.searchInput}
+          style={[styles.searchInput, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
           value={search}
           onChangeText={handleSearch}
           placeholder="투어명 또는 장소로 검색"
-          placeholderTextColor="#9ca3af"
+          placeholderTextColor={colors.muted}
           clearButtonMode="while-editing"
         />
       </View>
@@ -229,24 +231,24 @@ function ToursTab() {
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <View style={styles.centered}>
-            <Text style={styles.emptyText}>
+            <Text style={[styles.emptyText, { color: colors.muted }]}>
               {search ? "검색 결과가 없습니다" : "투어가 없습니다"}
             </Text>
           </View>
         }
         renderItem={({ item }) => (
-          <View style={styles.itemCard}>
+          <View style={[styles.itemCard, { backgroundColor: colors.card }]}>
             <View style={styles.itemInfo}>
-              <Text style={styles.itemName}>{item.name}</Text>
-              <Text style={styles.itemMeta}>
+              <Text style={[styles.itemName, { color: colors.text }]}>{item.name}</Text>
+              <Text style={[styles.itemMeta, { color: colors.muted }]}>
                 {item.date ? formatDate(item.date) : "-"} · {item.location || "-"}
               </Text>
-              <Text style={styles.itemMeta}>
+              <Text style={[styles.itemMeta, { color: colors.muted }]}>
                 참여자 {item.participants.length}명 · 비용 {item.expenses.length}건
               </Text>
             </View>
             <TouchableOpacity
-              style={[styles.deleteBtn, deletingId === item.id && styles.deleteBtnDisabled]}
+              style={[{ backgroundColor: colors.error }, styles.deleteBtn, deletingId === item.id && styles.deleteBtnDisabled]}
               onPress={() => handleDelete(item)}
               disabled={deletingId === item.id}
             >
@@ -266,6 +268,7 @@ function ToursTab() {
 // ─── Tab 3: 동의서 ────────────────────────────────────────────────────────────
 
 function WaiversTab() {
+  const { colors } = useTheme();
   const { toast, confirm } = useToast();
   const [waivers, setWaivers] = useState<Waiver[]>([]);
   const [loading, setLoading] = useState(true);
@@ -310,7 +313,7 @@ function WaiversTab() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#2196F3" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -324,20 +327,20 @@ function WaiversTab() {
       contentContainerStyle={styles.listContent}
       ListEmptyComponent={
         <View style={styles.centered}>
-          <Text style={styles.emptyText}>동의서가 없습니다</Text>
+          <Text style={[styles.emptyText, { color: colors.muted }]}>동의서가 없습니다</Text>
         </View>
       }
       renderItem={({ item }) => (
-        <View style={styles.itemCard}>
+        <View style={[styles.itemCard, { backgroundColor: colors.card }]}>
           <View style={styles.itemInfo}>
-            <Text style={styles.itemName}>{item.signerName}</Text>
-            <Text style={styles.itemMeta}>투어 ID: {item.tourId}</Text>
-            <Text style={styles.itemMeta}>
+            <Text style={[styles.itemName, { color: colors.text }]}>{item.signerName}</Text>
+            <Text style={[styles.itemMeta, { color: colors.muted }]}>투어 ID: {item.tourId}</Text>
+            <Text style={[styles.itemMeta, { color: colors.muted }]}>
               서명일: {item.signedAt ? formatDate(String(item.signedAt)) : "-"}
             </Text>
           </View>
           <TouchableOpacity
-            style={[styles.deleteBtn, deletingId === item.id && styles.deleteBtnDisabled]}
+            style={[{ backgroundColor: colors.error }, styles.deleteBtn, deletingId === item.id && styles.deleteBtnDisabled]}
             onPress={() => handleDelete(item)}
             disabled={deletingId === item.id}
           >
@@ -356,6 +359,7 @@ function WaiversTab() {
 // ─── Tab 4: 백업 ─────────────────────────────────────────────────────────────
 
 function BackupTab() {
+  const { colors } = useTheme();
   const { toast } = useToast();
   const [stats, setStats] = useState<DataStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -395,11 +399,11 @@ function BackupTab() {
 
   return (
     <ScrollView style={styles.tabContent} contentContainerStyle={styles.tabContentInner}>
-      <Text style={styles.sectionTitle}>데이터 현황</Text>
+      <Text style={[styles.sectionTitle, { color: colors.muted }]}>데이터 현황</Text>
       {loading ? (
-        <ActivityIndicator size="small" color="#2196F3" style={{ marginVertical: 16 }} />
+        <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: 16 }} />
       ) : stats ? (
-        <View style={styles.summaryCard}>
+        <View style={[styles.summaryCard, { backgroundColor: colors.card }]}>
           <SummaryRow label="투어" value={String(stats.tourCount)} />
           <SummaryRow label="참여자" value={String(stats.participantCount)} />
           <SummaryRow label="비용" value={String(stats.expenseCount)} />
@@ -408,17 +412,17 @@ function BackupTab() {
           <SummaryRow label="총 비용" value={formatKRW(stats.totalExpenseKRW)} isLast />
         </View>
       ) : (
-        <Text style={styles.emptyText}>데이터를 불러올 수 없습니다</Text>
+        <Text style={[styles.emptyText, { color: colors.muted }]}>데이터를 불러올 수 없습니다</Text>
       )}
 
-      <Text style={styles.sectionTitle}>캐시 관리</Text>
-      <View style={styles.cacheCard}>
-        <Text style={styles.cacheDesc}>
+      <Text style={[styles.sectionTitle, { color: colors.muted }]}>캐시 관리</Text>
+      <View style={[styles.cacheCard, { backgroundColor: colors.card }]}>
+        <Text style={[styles.cacheDesc, { color: colors.muted }]}>
           앱의 로컬 캐시를 초기화합니다.{"\n"}
           서버에 저장된 데이터(투어, 비용, 동의서 등)는 삭제되지 않습니다.
         </Text>
         <TouchableOpacity
-          style={[styles.clearBtn, clearing && styles.clearBtnDisabled]}
+          style={[{ backgroundColor: colors.error }, styles.clearBtn, clearing && styles.clearBtnDisabled]}
           onPress={handleClearCache}
           disabled={clearing}
         >
@@ -434,10 +438,11 @@ function BackupTab() {
 }
 
 function SummaryRow({ label, value, isLast }: { label: string; value: string; isLast?: boolean }) {
+  const { colors } = useTheme();
   return (
-    <View style={[styles.summaryRow, !isLast && styles.summaryRowBorder]}>
-      <Text style={styles.summaryLabel}>{label}</Text>
-      <Text style={styles.summaryValue}>{value}</Text>
+    <View style={[styles.summaryRow, !isLast && { borderBottomColor: colors.border }, !isLast && styles.summaryRowBorder]}>
+      <Text style={[styles.summaryLabel, { color: colors.text }]}>{label}</Text>
+      <Text style={[styles.summaryValue, { color: colors.primary }]}>{value}</Text>
     </View>
   );
 }
@@ -453,28 +458,29 @@ const TABS: { key: TabKey; label: string }[] = [
 
 export default function AdminDashboardScreen() {
   const navigation = useNavigation<any>();
+  const { colors } = useTheme();
   const [activeTab, setActiveTab] = useState<TabKey>("stats");
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={["top"]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.bg }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backBtnText}>‹ 뒤로</Text>
+          <Text style={[styles.backBtnText, { color: colors.primary }]}>‹ 뒤로</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>관리자 대시보드</Text>
+        <Text style={[styles.title, { color: colors.text }]}>관리자 대시보드</Text>
         <View style={{ width: 60 }} />
       </View>
 
       {/* Tab Bar */}
-      <View style={styles.tabBar}>
+      <View style={[styles.tabBar, { backgroundColor: colors.card }]}>
         {TABS.map((tab) => (
           <TouchableOpacity
             key={tab.key}
-            style={[styles.tabBtn, activeTab === tab.key && styles.tabBtnActive]}
+            style={[styles.tabBtn, activeTab === tab.key && { backgroundColor: colors.primary }]}
             onPress={() => setActiveTab(tab.key)}
           >
-            <Text style={[styles.tabBtnText, activeTab === tab.key && styles.tabBtnTextActive]}>
+            <Text style={[styles.tabBtnText, activeTab === tab.key && { color: "#fff" }, activeTab !== tab.key && { color: colors.muted }]}>
               {tab.label}
             </Text>
           </TouchableOpacity>
