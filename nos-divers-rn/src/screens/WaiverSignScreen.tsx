@@ -114,13 +114,13 @@ export default function WaiverSignScreen() {
 
   const signatureHTML = `
 <!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#fff;overflow:hidden}
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:${colors.card};overflow:hidden}
 canvas{display:block;width:100%;height:200px;touch-action:none}</style></head><body>
 <canvas id="c"></canvas>
 <script>
 var c=document.getElementById('c'),ctx=c.getContext('2d'),drawing=false,hasStrokes=false;
 c.width=c.offsetWidth*2;c.height=c.offsetHeight*2;ctx.scale(2,2);
-ctx.lineWidth=2.5;ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#023E58';
+ctx.lineWidth=2.5;ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='${colors.primary}';
 function pos(e){var t=e.touches?e.touches[0]:e,r=c.getBoundingClientRect();
 return{x:t.clientX-r.left,y:t.clientY-r.top}}
 c.addEventListener('touchstart',function(e){e.preventDefault();drawing=true;var p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);
@@ -310,11 +310,11 @@ window.ReactNativeWebView.postMessage(JSON.stringify({type:'image',data:c.toData
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={["top"]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backBtnText}>{"<"} 뒤로</Text>
+          <Text style={[styles.backBtnText, { color: colors.primary }]}>{"<"} 뒤로</Text>
         </TouchableOpacity>
       </View>
 
@@ -325,12 +325,12 @@ window.ReactNativeWebView.postMessage(JSON.stringify({type:'image',data:c.toData
             key={i}
             style={[
               styles.progressSegment,
-              { backgroundColor: i <= step ? "#2196F3" : "#D0D0D0" },
+              { backgroundColor: i <= step ? colors.primary : colors.muted },
             ]}
           />
         ))}
       </View>
-      <Text style={styles.progressLabel}>
+      <Text style={[styles.progressLabel, { color: colors.muted }]}>
         {STEPS[step]} ({step + 1}/{STEPS.length})
       </Text>
 
@@ -348,8 +348,8 @@ window.ReactNativeWebView.postMessage(JSON.stringify({type:'image',data:c.toData
             {/* ── Step 0: Personal Info ── */}
             {step === 0 && (
               <View>
-                <Text style={styles.stepTitle}>1. 기본 정보</Text>
-                <Text style={styles.stepDesc}>
+                <Text style={[styles.stepTitle, { color: colors.text }]}>1. 기본 정보</Text>
+                <Text style={[styles.stepDesc, { color: colors.muted }]}>
                   모든 항목을 빠짐없이 입력해주세요
                 </Text>
 
@@ -358,15 +358,16 @@ window.ReactNativeWebView.postMessage(JSON.stringify({type:'image',data:c.toData
                     showErrors && !personalInfo[field.key].trim();
                   return (
                     <View key={field.key} style={styles.inputGroup}>
-                      <Text style={styles.inputLabel}>
+                      <Text style={[styles.inputLabel, { color: colors.text }]}>
                         {field.label}{" "}
-                        <Text style={{ color: "#F44336" }}>*</Text>
+                        <Text style={{ color: colors.error }}>*</Text>
                       </Text>
                       <TextInput
                         style={[
                           styles.input,
+                          { backgroundColor: colors.card, color: colors.text, borderColor: colors.border },
                           isEmpty && {
-                            borderColor: "#F44336",
+                            borderColor: colors.error,
                             borderWidth: 2,
                           },
                         ]}
@@ -378,11 +379,11 @@ window.ReactNativeWebView.postMessage(JSON.stringify({type:'image',data:c.toData
                           }))
                         }
                         placeholder={field.placeholder}
-                        placeholderTextColor="#A0B4BE"
+                        placeholderTextColor={colors.muted}
                         keyboardType={field.keyboardType || "default"}
                       />
                       {isEmpty && (
-                        <Text style={styles.errorText}>
+                        <Text style={[styles.errorText, { color: colors.error }]}>
                           필수 입력 항목입니다
                         </Text>
                       )}
@@ -391,7 +392,7 @@ window.ReactNativeWebView.postMessage(JSON.stringify({type:'image',data:c.toData
                 })}
 
                 <TouchableOpacity
-                  style={styles.primaryBtn}
+                  style={[styles.primaryBtn, { backgroundColor: colors.primary }]}
                   onPress={handleStep0Next}
                 >
                   <Text style={styles.primaryBtnText}>
@@ -405,22 +406,22 @@ window.ReactNativeWebView.postMessage(JSON.stringify({type:'image',data:c.toData
             {step === 1 && (
               <View>
                 {/* Waiver header */}
-                <View style={styles.waiverHeaderBox}>
-                  <Text style={styles.waiverTitle}>{WAIVER_TITLE}</Text>
-                  <Text style={styles.waiverIntro}>{WAIVER_INTRO}</Text>
+                <View style={[styles.waiverHeaderBox, { backgroundColor: colors.card }]}>
+                  <Text style={[styles.waiverTitle, { color: colors.text }]}>{WAIVER_TITLE}</Text>
+                  <Text style={[styles.waiverIntro, { color: colors.text }]}>{WAIVER_INTRO}</Text>
                 </View>
 
                 {/* Sections */}
                 {WAIVER_SECTIONS.map((section, i) => (
-                  <View key={i} style={styles.waiverSection}>
-                    <Text style={styles.sectionTitle}>{section.title}</Text>
-                    <Text style={styles.sectionContent}>{section.content}</Text>
+                  <View key={i} style={[styles.waiverSection, { backgroundColor: colors.card }]}>
+                    <Text style={[styles.sectionTitle, { color: colors.text }]}>{section.title}</Text>
+                    <Text style={[styles.sectionContent, { color: colors.muted }]}>{section.content}</Text>
                   </View>
                 ))}
 
                 {/* Health checklist */}
-                <View style={styles.waiverSection}>
-                  <Text style={styles.sectionTitle}>
+                <View style={[styles.waiverSection, { backgroundColor: colors.card }]}>
+                  <Text style={[styles.sectionTitle, { color: colors.text }]}>
                     건강 상태 확인 (해당 사항 체크)
                   </Text>
                   {HEALTH_CHECKLIST.map((item, i) => (
@@ -437,40 +438,42 @@ window.ReactNativeWebView.postMessage(JSON.stringify({type:'image',data:c.toData
                       <View
                         style={[
                           styles.checkbox,
-                          healthChecklist[i] && styles.checkboxChecked,
+                          { borderColor: colors.border },
+                          healthChecklist[i] && { backgroundColor: colors.primary, borderColor: colors.primary },
                         ]}
                       >
                         {healthChecklist[i] && (
                           <Text style={styles.checkmark}>{"\u2713"}</Text>
                         )}
                       </View>
-                      <Text style={styles.checkboxLabel}>{item}</Text>
+                      <Text style={[styles.checkboxLabel, { color: colors.text }]}>{item}</Text>
                     </TouchableOpacity>
                   ))}
 
                   <View style={[styles.inputGroup, { marginTop: 12 }]}>
-                    <Text style={styles.inputLabel}>기타 특이사항</Text>
+                    <Text style={[styles.inputLabel, { color: colors.text }]}>기타 특이사항</Text>
                     <TextInput
-                      style={[styles.input, { height: 80, textAlignVertical: "top" }]}
+                      style={[styles.input, { height: 80, textAlignVertical: "top", backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
                       value={healthOther}
                       onChangeText={setHealthOther}
                       placeholder="해당 사항이 있으면 기입해주세요"
-                      placeholderTextColor="#A0B4BE"
+                      placeholderTextColor={colors.muted}
                       multiline
                     />
                   </View>
                 </View>
 
                 {/* Closing */}
-                <View style={styles.closingBox}>
-                  <Text style={styles.closingText}>{WAIVER_CLOSING}</Text>
+                <View style={[styles.closingBox, { backgroundColor: colors.card }]}>
+                  <Text style={[styles.closingText, { color: colors.text }]}>{WAIVER_CLOSING}</Text>
                 </View>
 
                 {/* Agreement checkbox */}
                 <TouchableOpacity
                   style={[
                     styles.agreeRow,
-                    agreedToTerms && styles.agreeRowChecked,
+                    { borderColor: colors.border },
+                    agreedToTerms && { borderColor: colors.primary, backgroundColor: colors.card },
                   ]}
                   onPress={() => setAgreedToTerms(!agreedToTerms)}
                   activeOpacity={0.7}
@@ -478,14 +481,15 @@ window.ReactNativeWebView.postMessage(JSON.stringify({type:'image',data:c.toData
                   <View
                     style={[
                       styles.checkbox,
-                      agreedToTerms && styles.checkboxChecked,
+                      { borderColor: colors.border },
+                      agreedToTerms && { backgroundColor: colors.primary, borderColor: colors.primary },
                     ]}
                   >
                     {agreedToTerms && (
                       <Text style={styles.checkmark}>{"\u2713"}</Text>
                     )}
                   </View>
-                  <Text style={styles.agreeText}>
+                  <Text style={[styles.agreeText, { color: colors.text }]}>
                     위의 모든 내용을 읽고 이해하였으며, 이에 동의합니다.
                   </Text>
                 </TouchableOpacity>
@@ -493,16 +497,16 @@ window.ReactNativeWebView.postMessage(JSON.stringify({type:'image',data:c.toData
                 {/* Nav buttons */}
                 <View style={styles.navRow}>
                   <TouchableOpacity
-                    style={[styles.secondaryBtn, { flex: 1 }]}
+                    style={[styles.secondaryBtn, { flex: 1, backgroundColor: colors.card, borderColor: colors.border }]}
                     onPress={() => setStep(0)}
                   >
-                    <Text style={styles.secondaryBtnText}>이전</Text>
+                    <Text style={[styles.secondaryBtnText, { color: colors.text }]}>이전</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[
                       styles.primaryBtn,
-                      { flex: 2 },
-                      !agreedToTerms && { backgroundColor: "#999" },
+                      { flex: 2, backgroundColor: colors.primary },
+                      !agreedToTerms && { backgroundColor: colors.muted, opacity: 0.5 },
                     ]}
                     onPress={handleStep1Next}
                   >
@@ -514,19 +518,19 @@ window.ReactNativeWebView.postMessage(JSON.stringify({type:'image',data:c.toData
           </ScrollView>
         ) : (
           /* ── Step 2: Signature — ScrollView 밖으로 분리 (터치 충돌 방지) ── */
-          <View style={[styles.scrollContent, { flex: 1 }]}>
-            <Text style={styles.stepTitle}>3. 서명</Text>
-            <Text style={styles.stepDesc}>
+          <View style={[styles.scrollContent, { flex: 1, backgroundColor: colors.bg }]}>
+            <Text style={[styles.stepTitle, { color: colors.text }]}>3. 서명</Text>
+            <Text style={[styles.stepDesc, { color: colors.muted }]}>
               아래 서명란에 손가락으로 직접 서명해주세요
             </Text>
 
             {/* Signature canvas via WebView */}
-            <View style={styles.signatureBox}>
-              <View style={styles.signatureCanvas}>
+            <View style={[styles.signatureBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={[styles.signatureCanvas, { backgroundColor: colors.card }]}>
                 <WebView
                   ref={webViewRef}
                   source={{ html: signatureHTML }}
-                  style={{ height: 200, backgroundColor: '#fff' }}
+                  style={{ height: 200, backgroundColor: colors.card }}
                   scrollEnabled={false}
                   bounces={false}
                   overScrollMode="never"
@@ -535,7 +539,7 @@ window.ReactNativeWebView.postMessage(JSON.stringify({type:'image',data:c.toData
                   javaScriptEnabled
                 />
                 {!hasSignature && (
-                  <Text style={[styles.signaturePlaceholder, { position: 'absolute', top: 85, left: 0, right: 0 }]}>
+                  <Text style={[styles.signaturePlaceholder, { position: 'absolute', top: 85, left: 0, right: 0, color: colors.muted }]}>
                     여기에 서명하세요
                   </Text>
                 )}
@@ -543,22 +547,22 @@ window.ReactNativeWebView.postMessage(JSON.stringify({type:'image',data:c.toData
 
               {/* Clear button */}
               <TouchableOpacity
-                style={styles.clearBtn}
+                style={[styles.clearBtn, { backgroundColor: colors.card, borderTopColor: colors.border }]}
                 onPress={() => {
                   webViewRef.current?.injectJavaScript("window.clear();true;");
                   setHasSignature(false);
                   setSignatureBase64("");
                 }}
               >
-                <Text style={styles.clearBtnText}>지우기</Text>
+                <Text style={[styles.clearBtnText, { color: colors.error }]}>지우기</Text>
               </TouchableOpacity>
             </View>
 
             <View style={{ marginVertical: 12 }}>
-              <Text style={styles.signInfoText}>
+              <Text style={[styles.signInfoText, { color: colors.muted }]}>
                 서명자: {personalInfo.name}
               </Text>
-              <Text style={styles.signInfoText}>
+              <Text style={[styles.signInfoText, { color: colors.muted }]}>
                 작성일: {new Date().toLocaleDateString("ko-KR")}
               </Text>
             </View>
@@ -566,18 +570,18 @@ window.ReactNativeWebView.postMessage(JSON.stringify({type:'image',data:c.toData
             {/* Nav buttons */}
             <View style={styles.navRow}>
               <TouchableOpacity
-                style={[styles.secondaryBtn, { flex: 1 }]}
+                style={[styles.secondaryBtn, { flex: 1, backgroundColor: colors.card, borderColor: colors.border }]}
                 onPress={() => setStep(1)}
               >
-                <Text style={styles.secondaryBtnText}>이전</Text>
+                <Text style={[styles.secondaryBtnText, { color: colors.text }]}>이전</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
                   styles.primaryBtn,
-                  { flex: 2 },
+                  { flex: 2, backgroundColor: colors.primary },
                   hasSignature
-                    ? { backgroundColor: "#4CAF50" }
-                    : { backgroundColor: "#999" },
+                    ? { backgroundColor: colors.success }
+                    : { backgroundColor: colors.muted, opacity: 0.5 },
                 ]}
                 onPress={handleSubmit}
                 disabled={submitting}

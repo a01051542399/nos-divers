@@ -20,7 +20,7 @@ const THEME_OPTIONS: { value: ThemeMode; label: string; desc: string }[] = [
 
 export default function SettingsDisplayScreen() {
   const navigation = useNavigation<any>();
-  const { mode, setMode } = useTheme();
+  const { mode, setMode, colors } = useTheme();
   const { toast } = useToast();
 
   const handleSelect = async (value: ThemeMode) => {
@@ -29,21 +29,21 @@ export default function SettingsDisplayScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={["top"]}>
+      <View style={[styles.header, { backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color="#023E58" />
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.title}>화면 모드</Text>
+        <Text style={[styles.title, { color: colors.text }]}>화면 모드</Text>
         <View style={{ width: 40 }} />
       </View>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.sectionDesc}>
+        <Text style={[styles.sectionDesc, { color: colors.muted }]}>
           앱의 색상 테마를 선택하세요.
         </Text>
 
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: colors.card }]}>
           {THEME_OPTIONS.map((option, index) => {
             const isSelected = mode === option.value;
             const isLast = index === THEME_OPTIONS.length - 1;
@@ -51,19 +51,19 @@ export default function SettingsDisplayScreen() {
             return (
               <TouchableOpacity
                 key={option.value}
-                style={[styles.optionRow, !isLast && styles.optionRowBorder]}
+                style={[styles.optionRow, !isLast && { borderBottomColor: colors.border }, !isLast && styles.optionRowBorder]}
                 onPress={() => handleSelect(option.value)}
                 activeOpacity={0.7}
               >
                 <View style={styles.optionLeft}>
-                  <View style={[styles.radioOuter, isSelected && styles.radioOuterSelected]}>
-                    {isSelected && <View style={styles.radioInner} />}
+                  <View style={[styles.radioOuter, { borderColor: colors.border }, isSelected && { borderColor: colors.primary }]}>
+                    {isSelected && <View style={[styles.radioInner, { backgroundColor: colors.primary }]} />}
                   </View>
                   <View style={styles.optionText}>
-                    <Text style={[styles.optionLabel, isSelected && styles.optionLabelSelected]}>
+                    <Text style={[styles.optionLabel, { color: colors.text }, isSelected && { color: colors.primary, fontWeight: "600" }]}>
                       {option.label}
                     </Text>
-                    <Text style={styles.optionDesc}>{option.desc}</Text>
+                    <Text style={[styles.optionDesc, { color: colors.muted }]}>{option.desc}</Text>
                   </View>
                 </View>
               </TouchableOpacity>

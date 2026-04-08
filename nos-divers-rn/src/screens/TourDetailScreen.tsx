@@ -85,6 +85,9 @@ export default function TourDetailScreen() {
   // 비용 카드 펼침
   const [expandedExpenseId, setExpandedExpenseId] = useState<number | null>(null);
 
+  // 참여자 접힘 상태 (기본값: collapsed)
+  const [participantsExpanded, setParticipantsExpanded] = useState(false);
+
   // 카테고리 접힘 상태 (기본값: 모두 접힘)
   const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({ '다이빙': true, '숙박': true, '식비': true, '기타': true });
 
@@ -478,83 +481,99 @@ export default function TourDetailScreen() {
       keyboardShouldPersistTaps="handled"
       contentContainerStyle={{ paddingBottom: 200 }}
     >
-      {/* 참여자 추가 */}
-      <View style={styles.addRow}>
-        <TextInput
-          style={styles.addInput}
-          placeholder="참여자 이름"
-          placeholderTextColor={C.muted}
-          value={newParticipantName}
-          onChangeText={setNewParticipantName}
-          onSubmitEditing={handleAddParticipant}
-          returnKeyType="done"
-        />
-        <TouchableOpacity
-          style={[
-            styles.addBtn,
-            (!newParticipantName.trim() || addingParticipant) &&
-              styles.addBtnDisabled,
-          ]}
-          onPress={handleAddParticipant}
-          disabled={!newParticipantName.trim() || addingParticipant}
-        >
-          <Text style={styles.addBtnText}>
-            {addingParticipant ? "..." : "추가"}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* 참여자 목록 */}
-      {tour.participants.length === 0 ? (
-        <Text style={[styles.mutedText, { textAlign: "center", marginTop: 24 }]}>
-          아직 참여자가 없습니다
+      {/* 참여자 접기/펼치기 헤더 */}
+      <TouchableOpacity
+        style={[styles.categoryHeader, { marginBottom: 12 }]}
+        onPress={() => setParticipantsExpanded(!participantsExpanded)}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.categoryHeaderLeft}>
+          참여자 ({tour.participants.length}명) {participantsExpanded ? "▼" : "▶"}
         </Text>
-      ) : (
-        tour.participants.map((p) => {
-          const hasSigned = waivers.some(
-            (w) => w.signerName === p.name,
-          );
-          const isInvolved = tour.expenses.some(
-            (e) => e.paidBy === p.id || e.splitAmong.includes(p.id),
-          );
-          const canDelete = !isInvolved;
-          return (
-            <View key={p.id} style={[styles.listItem, { justifyContent: "space-between" }]}>
-              <View
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: 4,
-                  backgroundColor: hasSigned ? "#4CAF50" : "#F85149",
-                  marginRight: 10,
-                  flexShrink: 0,
-                }}
-              />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.itemTitle}>{p.name}</Text>
-                {p.addedBy && (
-                  <Text style={styles.itemSub}>추가: {p.addedBy}</Text>
-                )}
-              </View>
-              {canDelete && (
-                <TouchableOpacity
-                  onPress={() => handleRemoveParticipant(p.id, p.name)}
-                  style={{
-                    marginLeft: 8,
-                    paddingHorizontal: 10,
-                    paddingVertical: 4,
-                    borderRadius: 6,
-                    borderWidth: 1,
-                    borderColor: C.red,
-                  }}
-                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                >
-                  <Text style={{ color: C.red, fontSize: 12, fontWeight: "600" }}>삭제</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          );
-        })
+      </TouchableOpacity>
+
+      {/* 참여자 섹션 (접힘/펼침) */}
+      {participantsExpanded && (
+        <>
+          {/* 참여자 추가 */}
+          <View style={styles.addRow}>
+            <TextInput
+              style={styles.addInput}
+              placeholder="참여자 이름"
+              placeholderTextColor={C.muted}
+              value={newParticipantName}
+              onChangeText={setNewParticipantName}
+              onSubmitEditing={handleAddParticipant}
+              returnKeyType="done"
+            />
+            <TouchableOpacity
+              style={[
+                styles.addBtn,
+                (!newParticipantName.trim() || addingParticipant) &&
+                  styles.addBtnDisabled,
+              ]}
+              onPress={handleAddParticipant}
+              disabled={!newParticipantName.trim() || addingParticipant}
+            >
+              <Text style={styles.addBtnText}>
+                {addingParticipant ? "..." : "추가"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* 참여자 목록 */}
+          {tour.participants.length === 0 ? (
+            <Text style={[styles.mutedText, { textAlign: "center", marginTop: 24 }]}>
+              아직 참여자가 없습니다
+            </Text>
+          ) : (
+            tour.participants.map((p) => {
+              const hasSigned = waivers.some(
+                (w) => w.signerName === p.name,
+              );
+              const isInvolved = tour.expenses.some(
+                (e) => e.paidBy === p.id || e.splitAmong.includes(p.id),
+              );
+              const canDelete = !isInvolved;
+              return (
+                <View key={p.id} style={[styles.listItem, { justifyContent: "space-between" }]}>
+                  <View
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: 4,
+                      backgroundColor: hasSigned ? C.green : C.red,
+                      marginRight: 10,
+                      flexShrink: 0,
+                    }}
+                  />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.itemTitle}>{p.name}</Text>
+                    {p.addedBy && (
+                      <Text style={styles.itemSub}>추가: {p.addedBy}</Text>
+                    )}
+                  </View>
+                  {canDelete && (
+                    <TouchableOpacity
+                      onPress={() => handleRemoveParticipant(p.id, p.name)}
+                      style={{
+                        marginLeft: 8,
+                        paddingHorizontal: 10,
+                        paddingVertical: 4,
+                        borderRadius: 6,
+                        borderWidth: 1,
+                        borderColor: C.red,
+                      }}
+                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    >
+                      <Text style={{ color: C.red, fontSize: 12, fontWeight: "600" }}>삭제</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              );
+            })
+          )}
+        </>
       )}
 
       {/* 댓글 영역 */}
@@ -1449,7 +1468,7 @@ function makeStyles(C: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#D6EAF2",
+    backgroundColor: C.card,
     borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 10,
