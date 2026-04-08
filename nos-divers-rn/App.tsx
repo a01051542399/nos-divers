@@ -130,16 +130,18 @@ function MainTabs() {
         tabBarStyle: {
           backgroundColor: colors.card,
           borderTopColor: colors.border,
-          paddingBottom: 20,
-          paddingTop: 6,
-          height: 80,
+          paddingBottom: 10,
+          paddingTop: 8,
+          height: 60,
+          elevation: 8,
         },
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: "600",
+          marginBottom: 2,
         },
         tabBarIconStyle: {
-          marginTop: 2,
+          marginBottom: 0,
         },
       }}
     >

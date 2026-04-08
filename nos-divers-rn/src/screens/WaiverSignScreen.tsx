@@ -118,7 +118,7 @@ export default function WaiverSignScreen() {
   const signatureHTML = `
 <!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <style>*{margin:0;padding:0;box-sizing:border-box}body{background:${colors.card};overflow:hidden}
-canvas{display:block;width:100%;height:100vh;touch-action:none}</style></head><body>
+canvas{display:block;width:100%;height:300px;touch-action:none}</style></head><body>
 <canvas id="c"></canvas>
 <script>
 var c=document.getElementById('c'),ctx=c.getContext('2d'),drawing=false,hasStrokes=false;
@@ -606,15 +606,15 @@ window.ReactNativeWebView.postMessage(JSON.stringify({type:'image',data:c.toData
               </TouchableOpacity>
             </View>
 
-            <View style={{ flex: 1, padding: 16 }}>
+            <View style={{ flex: 1, padding: 16, justifyContent: 'center' }}>
               <Text style={{ color: colors.muted, textAlign: 'center', marginBottom: 12, fontSize: 14 }}>
                 아래 영역에 손가락으로 서명해주세요
               </Text>
-              <View style={{ flex: 1, borderRadius: 12, borderWidth: 2, borderColor: colors.border, overflow: 'hidden', backgroundColor: '#FFFFFF' }}>
+              <View style={{ height: 300, borderRadius: 12, borderWidth: 2, borderColor: colors.border, overflow: 'hidden', backgroundColor: '#FFFFFF' }}>
                 <WebView
                   ref={webViewRef}
                   source={{ html: signatureHTML }}
-                  style={{ flex: 1 }}
+                  style={{ height: 300 }}
                   scrollEnabled={false}
                   bounces={false}
                   overScrollMode="never"
