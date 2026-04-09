@@ -16,7 +16,7 @@ import {
   Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import type { Tour } from "../types";
 import * as db from "../lib/supabase-store";
 import PinModal from "../components/PinModal";
@@ -156,10 +156,11 @@ export default function TourListScreen() {
     fetchTours();
   }, [fetchTours]);
 
-  // 화면에 돌아올 때마다 새로고침
+  // 화면에 돌아올 때마다 투어 + 설정 새로고침
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
       fetchTours();
+      refreshSettings();
     });
     return unsubscribe;
   }, [navigation, fetchTours]);
