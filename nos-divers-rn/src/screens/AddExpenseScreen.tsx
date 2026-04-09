@@ -149,6 +149,7 @@ export default function AddExpenseScreen() {
           justifyContent: "space-between",
           paddingHorizontal: 16,
           paddingVertical: 14,
+          paddingTop: Platform.OS === "android" ? 40 : 14,
           borderBottomWidth: 1,
           borderBottomColor: C.border,
         },

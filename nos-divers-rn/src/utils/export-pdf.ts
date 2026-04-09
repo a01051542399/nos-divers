@@ -4,6 +4,7 @@
  */
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
+import * as FileSystem from "expo-file-system/legacy";
 import type { Tour, Settlement, Expense, Participant } from "../types";
 import { formatKRW } from "../store";
 
@@ -217,5 +218,8 @@ export async function exportSettlementPDF(
     width: landscape ? 842 : 595,
     height: landscape ? 595 : 842,
   });
-  await Sharing.shareAsync(uri, { mimeType: "application/pdf" });
+  const fileName = `${tour.name}_${tour.date}_정산.pdf`;
+  const newUri = FileSystem.cacheDirectory + fileName;
+  await FileSystem.copyAsync({ from: uri, to: newUri });
+  await Sharing.shareAsync(newUri, { mimeType: "application/pdf", dialogTitle: fileName });
 }

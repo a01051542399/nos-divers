@@ -1,5 +1,6 @@
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
+import * as FileSystem from "expo-file-system/legacy";
 import type { Waiver, WaiverPersonalInfo } from "../types";
 import {
   WAIVER_TITLE,
@@ -206,9 +207,12 @@ export async function exportWaiverPDF(waiver: Waiver, tourName: string): Promise
   const html = HTML_WRAPPER(body);
 
   const { uri } = await Print.printToFileAsync({ html, base64: false });
-  await Sharing.shareAsync(uri, {
+  const fileName = `${tourName}_${waiver.signerName}_면책동의서.pdf`;
+  const newUri = FileSystem.cacheDirectory + fileName;
+  await FileSystem.copyAsync({ from: uri, to: newUri });
+  await Sharing.shareAsync(newUri, {
     mimeType: "application/pdf",
-    dialogTitle: `${waiver.signerName} 면책동의서`,
+    dialogTitle: fileName,
     UTI: "com.adobe.pdf",
   });
 }
@@ -222,9 +226,12 @@ export async function exportAllWaiversPDF(waivers: Waiver[], tourName: string): 
   const html = HTML_WRAPPER(body);
 
   const { uri } = await Print.printToFileAsync({ html, base64: false });
-  await Sharing.shareAsync(uri, {
+  const fileName = `${tourName}_전체_면책동의서_${waivers.length}명.pdf`;
+  const newUri = FileSystem.cacheDirectory + fileName;
+  await FileSystem.copyAsync({ from: uri, to: newUri });
+  await Sharing.shareAsync(newUri, {
     mimeType: "application/pdf",
-    dialogTitle: `${tourName} 전체 면책동의서 (${waivers.length}명)`,
+    dialogTitle: fileName,
     UTI: "com.adobe.pdf",
   });
 }
