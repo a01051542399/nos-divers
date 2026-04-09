@@ -290,8 +290,9 @@ export default function TourListScreen() {
 
   // ─── 숨긴 투어 필터 ───
 
+  const hiddenIds = (settings?.hiddenTourIds ?? []).map(Number);
   const visibleTours = tours.filter(
-    (t) => !(settings?.hiddenTourIds ?? []).includes(t.id)
+    (t) => !hiddenIds.includes(Number(t.id))
   );
 
   // ─── 투어 카드 렌더링 ───

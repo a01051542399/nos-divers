@@ -24,16 +24,23 @@ export default function HiddenToursScreen() {
   const { settings, loading: settingsLoading, refresh: refreshSettings } = useAppSettings();
 
   const hiddenTours = useMemo(() => {
-    if (!settings.hiddenTourIds.length) return [];
-    return tours.filter((t) => settings.hiddenTourIds.includes(t.id));
+    const ids = (settings.hiddenTourIds || []).map(Number);
+    if (!ids.length) return [];
+    return tours.filter((t) => ids.includes(Number(t.id)));
   }, [tours, settings.hiddenTourIds]);
 
   const handleRestore = async (tour: Tour) => {
     try {
-      const newIds = settings.hiddenTourIds.filter((id) => id !== tour.id);
+      const currentIds = settings.hiddenTourIds || [];
+      const tourId = Number(tour.id);
+      const newIds = currentIds.filter((id: number) => Number(id) !== tourId);
       await db.setHiddenTourIds(newIds);
       await refreshSettings();
       toast(`"${tour.name}" 투어를 복원했습니다`, "success");
+      // 목록이 비면 뒤로 가기
+      if (newIds.length === 0) {
+        navigation.goBack();
+      }
     } catch (e: any) {
       toast(e.message || "복원에 실패했습니다", "error");
     }
