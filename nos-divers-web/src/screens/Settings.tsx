@@ -4,7 +4,7 @@ import { useToast } from "../toast";
 import * as db from "../lib/supabase-store";
 import { getTheme, type ThemeMode } from "../theme";
 import { useAuth } from "../lib/AuthContext";
-import { useUnreadAnnouncementCount } from "../hooks/useSupabase";
+import { useUnreadAnnouncementCount, useIsAdmin } from "../hooks/useSupabase";
 import type { Tour } from "../types";
 
 interface Props {
@@ -16,6 +16,7 @@ export function SettingsScreen({ navigate }: Props) {
   const { toast, confirm } = useToast();
   const { signOut: authSignOut } = useAuth();
   const { count: unreadCount } = useUnreadAnnouncementCount();
+  const { isAdmin } = useIsAdmin();
   const [showHidden, setShowHidden] = useState(false);
   const [pwInput, setPwInput] = useState("");
   const [showPwPrompt, setShowPwPrompt] = useState(false);
@@ -119,9 +120,11 @@ export function SettingsScreen({ navigate }: Props) {
   };
 
   const handleAdminVerify = async (pw: string) => {
-    const valid = await db.verifyAdminPassword(pw);
-    if (valid) {
+    // claim_admin_access: 비밀번호 확인 + admin_users 등록 (RLS 우회 활성)
+    const ok = await db.claimAdminAccess(pw);
+    if (ok) {
       setShowAdminPrompt(false);
+      setAdminPwInput("");
       navigate({ screen: "admin" });
     } else {
       toast("비밀번호가 올바르지 않습니다", "error");
@@ -236,9 +239,23 @@ export function SettingsScreen({ navigate }: Props) {
             </span>
           </div>
           <div className="settings-row" style={{ cursor: "pointer" }}
-            onClick={() => { setShowAdminPrompt(true); setAdminPwInput(""); }}>
+            onClick={() => {
+              if (isAdmin) {
+                navigate({ screen: "admin" });
+              } else {
+                setShowAdminPrompt(true);
+                setAdminPwInput("");
+              }
+            }}>
             <span className="label">관리자 모드</span>
             <span className="value" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              {isAdmin && (
+                <span style={{
+                  background: "var(--primary-alpha-15)", color: "var(--primary)",
+                  fontSize: 11, fontWeight: 700,
+                  padding: "2px 8px", borderRadius: 10,
+                }}>활성</span>
+              )}
               <span style={{ fontSize: 16 }}>›</span>
             </span>
           </div>

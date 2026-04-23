@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import * as db from "../lib/supabase-store";
 import { calculateSettlement, formatCurrency, formatDate, formatDateTime } from "../store";
 import { useToast } from "../toast";
+import { useIsAdmin } from "../hooks/useSupabase";
 import type { Route } from "../App";
 import type { Tour } from "../types";
 import { CommentTab } from "../components/CommentTab";
@@ -18,6 +19,7 @@ type Tab = "participants" | "expenses" | "settlement";
 export function TourDetailScreen({ tourId, navigate }: Props) {
   const [tour, setTour] = useState<Tour | undefined>(undefined);
   const [tourLoading, setTourLoading] = useState(true);
+  const { isAdmin } = useIsAdmin();
   const [activeTab, setActiveTab] = useState<Tab>("participants");
   const [newParticipantName, setNewParticipantName] = useState("");
   const [showExpenseForm, setShowExpenseForm] = useState(false);
@@ -121,6 +123,11 @@ export function TourDetailScreen({ tourId, navigate }: Props) {
     tour.participants.find((p) => p.id === pid)?.name || "알 수 없음";
 
   const requirePin = (action: () => void) => {
+    // 관리자 모드면 PIN 우회 (단일 비밀번호로 모든 관리)
+    if (isAdmin) {
+      action();
+      return;
+    }
     setPendingAction(() => action);
     setPinValue("");
     setShowPinModal(true);
@@ -355,6 +362,17 @@ export function TourDetailScreen({ tourId, navigate }: Props) {
 
   return (
     <>
+      {/* 관리자 모드 배너 */}
+      {isAdmin && (
+        <div style={{
+          background: "rgba(72, 202, 228, 0.15)", color: "var(--primary)",
+          padding: "6px 16px", fontSize: 12, fontWeight: 700,
+          textAlign: "center", borderBottom: "1px solid var(--border)",
+        }}>
+          🛠 관리자 모드 — PIN 없이 모든 항목 수정/삭제 가능
+        </div>
+      )}
+
       {/* Top bar */}
       <div className="tour-header-bar">
         <button className="back-btn" onClick={() => navigate({ screen: "tours" })}>

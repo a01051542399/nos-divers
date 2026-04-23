@@ -205,6 +205,27 @@ export function useAnnouncements() {
   return { announcements, loading, refresh };
 }
 
+// ─── useIsAdmin ───
+
+export function useIsAdmin(refreshKey: number = 0) {
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    try {
+      const ok = await db.amIAdmin();
+      setIsAdmin(ok);
+    } catch {
+      setIsAdmin(false);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { refresh(); }, [refresh, refreshKey]);
+  return { isAdmin, loading, refresh };
+}
+
 // ─── useUnreadAnnouncementCount ───
 
 export function useUnreadAnnouncementCount(refreshKey: number = 0) {

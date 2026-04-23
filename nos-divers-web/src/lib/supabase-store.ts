@@ -768,6 +768,31 @@ export async function verifyAdminPassword(pw: string): Promise<boolean> {
   return data === true;
 }
 
+/** 관리자 권한 획득 (비밀번호 확인 후 admin_users 등록).
+ *  성공 시 RLS 가 모든 투어/참여자/비용/동의서/댓글/프로필을 노출하기 시작.
+ */
+export async function claimAdminAccess(pw: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc("claim_admin_access", {
+    p_admin_password: pw,
+  });
+  if (error) {
+    console.warn("claim_admin_access 실패:", error.message);
+    return false;
+  }
+  return data === true;
+}
+
+/** 관리자 모드 종료 — admin_users 에서 제거. */
+export async function releaseAdminAccess(): Promise<void> {
+  await supabase.rpc("release_admin_access");
+}
+
+/** 현재 세션의 관리자 여부 확인 (서버 단일 진실 원천). */
+export async function amIAdmin(): Promise<boolean> {
+  const { data } = await supabase.rpc("am_i_admin");
+  return data === true;
+}
+
 // ─── Data Stats (Admin) ───
 
 export async function getDataStats(): Promise<{

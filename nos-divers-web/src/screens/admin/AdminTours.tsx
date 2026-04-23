@@ -1,10 +1,15 @@
 import { useState, useEffect } from "react";
+import type { Route } from "../../App";
 import * as db from "../../lib/supabase-store";
 import { formatKRW, formatDateTime } from "../../store";
 import { useToast } from "../../toast";
 import type { Tour } from "../../types";
 
-export function AdminTours() {
+interface Props {
+  navigate?: (r: Route) => void;
+}
+
+export function AdminTours({ navigate }: Props = {}) {
   const [tours, setTours] = useState<Tour[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -176,12 +181,24 @@ export function AdminTours() {
                     )}
 
                     {/* Actions */}
-                    <div style={{ display: "flex", gap: 12, marginTop: 14 }}>
+                    <div style={{ display: "flex", gap: 12, marginTop: 14, alignItems: "center" }}>
+                      {navigate && (
+                        <button
+                          onClick={() => navigate({ screen: "tour-detail", tourId: tour.id })}
+                          style={{
+                            background: "var(--primary)", color: "var(--on-primary)",
+                            border: "none", borderRadius: 8, padding: "8px 14px",
+                            fontSize: 13, fontWeight: 700, cursor: "pointer",
+                          }}
+                        >
+                          📋 상세 관리
+                        </button>
+                      )}
                       <button
                         onClick={() => handleEdit(tour)}
                         style={{ background: "none", border: "none", cursor: "pointer", color: "var(--primary)", fontSize: 13, fontWeight: 600, padding: 0 }}
                       >
-                        수정
+                        이름/날짜 수정
                       </button>
                       <button
                         onClick={() => handleDelete(tour)}
