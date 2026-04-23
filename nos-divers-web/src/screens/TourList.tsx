@@ -3,7 +3,7 @@ import type { Route } from "../App";
 import { useToast } from "../toast";
 import * as db from "../lib/supabase-store";
 import { formatCurrency } from "../store";
-import { useTours } from "../hooks/useSupabase";
+import { useTours, useUnreadAnnouncementCount } from "../hooks/useSupabase";
 import { getTheme } from "../theme";
 
 interface Props {
@@ -12,6 +12,7 @@ interface Props {
 
 export function TourListScreen({ navigate }: Props) {
   const { tours, loading, refresh } = useTours();
+  const { count: unreadAnnouncements } = useUnreadAnnouncementCount();
   const [showCreate, setShowCreate] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
   const [deletePinValue, setDeletePinValue] = useState("");
@@ -105,6 +106,25 @@ export function TourListScreen({ navigate }: Props) {
         {/* Header with actions */}
         <div className="tour-list-header">
           <h1>다이빙 투어</h1>
+          <button
+            className="header-btn"
+            onClick={() => navigate({ screen: "announcements" })}
+            aria-label="공지사항"
+            style={{ position: "relative", padding: "6px 10px" }}
+          >
+            🔔
+            {unreadAnnouncements > 0 && (
+              <span style={{
+                position: "absolute", top: -4, right: -4,
+                background: "var(--error)", color: "#fff",
+                fontSize: 10, fontWeight: 700,
+                padding: "1px 5px", borderRadius: 10, lineHeight: 1.4,
+                minWidth: 16, textAlign: "center",
+              }}>
+                {unreadAnnouncements > 99 ? "99+" : unreadAnnouncements}
+              </span>
+            )}
+          </button>
           <button className="header-btn" onClick={() => navigate({ screen: "join" })}>
             ▶ 참여
           </button>

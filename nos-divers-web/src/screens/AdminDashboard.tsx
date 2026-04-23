@@ -4,17 +4,19 @@ import { AdminStats } from "./admin/AdminStats";
 import { AdminTours } from "./admin/AdminTours";
 import { AdminWaivers } from "./admin/AdminWaivers";
 import { AdminBackup } from "./admin/AdminBackup";
+import { AdminAnnouncements } from "./admin/AdminAnnouncements";
 
 interface Props {
   navigate: (r: Route) => void;
 }
 
-type AdminTab = "stats" | "tours" | "waivers" | "backup";
+type AdminTab = "stats" | "tours" | "waivers" | "announcements" | "backup";
 
 const TABS: { key: AdminTab; label: string }[] = [
   { key: "stats", label: "통계" },
   { key: "tours", label: "투어" },
   { key: "waivers", label: "동의서" },
+  { key: "announcements", label: "공지" },
   { key: "backup", label: "백업" },
 ];
 
@@ -52,6 +54,7 @@ export function AdminDashboard({ navigate }: Props) {
         {tab === "stats" && <AdminStats />}
         {tab === "tours" && <AdminTours />}
         {tab === "waivers" && <AdminWaivers />}
+        {tab === "announcements" && <AdminAnnouncements />}
         {tab === "backup" && <AdminBackup />}
       </div>
     </>

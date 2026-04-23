@@ -5,7 +5,7 @@
 import { supabase } from "./supabase";
 import type {
   Tour, Participant, Expense, Waiver, Comment,
-  WaiverPersonalInfo,
+  WaiverPersonalInfo, Announcement,
 } from "../types";
 import { hashPin, verifyPin, isLegacyPlain } from "./pin-crypto";
 
@@ -799,4 +799,129 @@ export async function getDataStats(): Promise<{
     commentCount: comments.count || 0,
     totalExpenseKRW,
   };
+}
+
+// ─── Announcements (인앱 공지) ───
+
+function toAnnouncement(row: any, readIds: Set<number>): Announcement {
+  return {
+    id: row.id,
+    title: row.title,
+    body: row.body,
+    targetTourId: row.target_tour_id ?? null,
+    pinned: !!row.pinned,
+    authorName: row.author_name || "운영진",
+    createdAt: row.created_at,
+    read: readIds.has(row.id),
+  };
+}
+
+/** 본인이 볼 수 있는 모든 공지 (RLS 가 필터). pinned 우선 + 최신순. */
+export async function listAnnouncements(): Promise<Announcement[]> {
+  const user = (await supabase.auth.getUser()).data.user;
+  const [aRes, rRes] = await Promise.all([
+    supabase
+      .from("announcements")
+      .select("*")
+      .order("pinned", { ascending: false })
+      .order("created_at", { ascending: false }),
+    user
+      ? supabase
+          .from("announcement_reads")
+          .select("announcement_id")
+          .eq("user_id", user.id)
+      : Promise.resolve({ data: [] as any[], error: null }),
+  ]);
+  if (aRes.error) throw aRes.error;
+  const readIds = new Set<number>(
+    (rRes.data || []).map((r: any) => r.announcement_id),
+  );
+  return (aRes.data || []).map((row: any) => toAnnouncement(row, readIds));
+}
+
+/** 미읽음 공지 개수 (헤더 배지용) */
+export async function getUnreadAnnouncementCount(): Promise<number> {
+  const { data, error } = await supabase.rpc("get_unread_announcement_count");
+  if (error) {
+    // RPC 미배포 환경에서는 0 으로 폴백
+    console.warn("get_unread_announcement_count 폴백:", error.message);
+    return 0;
+  }
+  return Number(data) || 0;
+}
+
+/** 단일 공지 읽음 표시 (UNIQUE 제약으로 중복 무시) */
+export async function markAnnouncementRead(announcementId: number): Promise<void> {
+  const user = (await supabase.auth.getUser()).data.user;
+  if (!user) return;
+  await supabase
+    .from("announcement_reads")
+    .upsert(
+      { announcement_id: announcementId, user_id: user.id },
+      { onConflict: "announcement_id,user_id", ignoreDuplicates: true },
+    );
+}
+
+/** 모두 읽음 처리 — RPC 한 번 (벌크) */
+export async function markAllAnnouncementsRead(): Promise<number> {
+  const { data, error } = await supabase.rpc("mark_all_announcements_read");
+  if (error) {
+    console.warn("mark_all_announcements_read 폴백:", error.message);
+    return 0;
+  }
+  return Number(data) || 0;
+}
+
+/** 관리자 비밀번호 검증 후 공지 작성 */
+export async function createAnnouncement(input: {
+  adminPassword: string;
+  title: string;
+  body: string;
+  targetTourId?: number | null;
+  pinned?: boolean;
+  authorName?: string;
+}): Promise<{ id: number } | { error: string }> {
+  const { data, error } = await supabase.rpc("create_announcement", {
+    p_admin_password: input.adminPassword,
+    p_title: input.title,
+    p_body: input.body,
+    p_target_tour_id: input.targetTourId ?? null,
+    p_pinned: !!input.pinned,
+    p_author_name: input.authorName ?? "운영진",
+  });
+  if (error) return { error: error.message };
+  if (data?.error) return { error: data.error };
+  return { id: data.id };
+}
+
+export async function updateAnnouncement(input: {
+  adminPassword: string;
+  id: number;
+  title?: string;
+  body?: string;
+  pinned?: boolean;
+}): Promise<{ ok: true } | { error: string }> {
+  const { data, error } = await supabase.rpc("update_announcement", {
+    p_admin_password: input.adminPassword,
+    p_id: input.id,
+    p_title: input.title ?? "",
+    p_body: input.body ?? "",
+    p_pinned: input.pinned ?? null,
+  });
+  if (error) return { error: error.message };
+  if (data?.error) return { error: data.error };
+  return { ok: true };
+}
+
+export async function deleteAnnouncement(input: {
+  adminPassword: string;
+  id: number;
+}): Promise<{ ok: true } | { error: string }> {
+  const { data, error } = await supabase.rpc("delete_announcement", {
+    p_admin_password: input.adminPassword,
+    p_id: input.id,
+  });
+  if (error) return { error: error.message };
+  if (data?.error) return { error: data.error };
+  return { ok: true };
 }

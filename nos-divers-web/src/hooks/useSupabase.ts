@@ -4,7 +4,7 @@
  */
 import { useState, useEffect, useCallback } from "react";
 import * as db from "../lib/supabase-store";
-import type { Tour, Waiver, Comment } from "../types";
+import type { Tour, Waiver, Comment, Announcement } from "../types";
 
 // ─── useTours ───
 
@@ -181,4 +181,44 @@ export function useTrashTours() {
   useEffect(() => { refresh(); }, [refresh]);
 
   return { tours, loading, refresh };
+}
+
+// ─── useAnnouncements ───
+
+export function useAnnouncements() {
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await db.listAnnouncements();
+      setAnnouncements(data);
+    } catch {
+      setAnnouncements([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { refresh(); }, [refresh]);
+  return { announcements, loading, refresh };
+}
+
+// ─── useUnreadAnnouncementCount ───
+
+export function useUnreadAnnouncementCount(refreshKey: number = 0) {
+  const [count, setCount] = useState(0);
+
+  const refresh = useCallback(async () => {
+    try {
+      const n = await db.getUnreadAnnouncementCount();
+      setCount(n);
+    } catch {
+      setCount(0);
+    }
+  }, []);
+
+  useEffect(() => { refresh(); }, [refresh, refreshKey]);
+  return { count, refresh };
 }

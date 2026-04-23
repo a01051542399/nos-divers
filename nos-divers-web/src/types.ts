@@ -93,3 +93,14 @@ export interface Comment {
   createdAt: string;
   edited?: boolean;
 }
+
+export interface Announcement {
+  id: number;
+  title: string;
+  body: string;
+  targetTourId: number | null; // null = 전체 공지
+  pinned: boolean;
+  authorName: string;
+  createdAt: string;
+  read: boolean;
+}

@@ -4,6 +4,7 @@ import { useToast } from "../toast";
 import * as db from "../lib/supabase-store";
 import { getTheme, type ThemeMode } from "../theme";
 import { useAuth } from "../lib/AuthContext";
+import { useUnreadAnnouncementCount } from "../hooks/useSupabase";
 import type { Tour } from "../types";
 
 interface Props {
@@ -14,6 +15,7 @@ export function SettingsScreen({ navigate }: Props) {
   const [currentTheme] = useState<ThemeMode>(getTheme);
   const { toast, confirm } = useToast();
   const { signOut: authSignOut } = useAuth();
+  const { count: unreadCount } = useUnreadAnnouncementCount();
   const [showHidden, setShowHidden] = useState(false);
   const [pwInput, setPwInput] = useState("");
   const [showPwPrompt, setShowPwPrompt] = useState(false);
@@ -324,6 +326,27 @@ export function SettingsScreen({ navigate }: Props) {
           <div className="settings-row" style={{ borderBottom: "none" }}>
             <span className="label">개발</span>
             <span className="value">Dive ON</span>
+          </div>
+        </div>
+
+        {/* Announcements — 공지사항 (배지) */}
+        <div className="card" style={{ marginTop: 8 }}>
+          <div className="settings-row" style={{ borderBottom: "none", cursor: "pointer" }}
+            onClick={() => navigate({ screen: "announcements" })}>
+            <span className="label">공지사항</span>
+            <span className="value" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              {unreadCount > 0 && (
+                <span style={{
+                  background: "var(--error)", color: "#fff",
+                  fontSize: 11, fontWeight: 700,
+                  padding: "2px 7px", borderRadius: 10, lineHeight: 1.4,
+                  minWidth: 18, textAlign: "center",
+                }}>
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
+              <span style={{ fontSize: 16 }}>›</span>
+            </span>
           </div>
         </div>
 

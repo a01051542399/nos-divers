@@ -9,6 +9,7 @@ import { SettingsScreen } from "./screens/Settings";
 import { SettingsDisplayScreen } from "./screens/SettingsDisplay";
 import { SettingsProfileScreen } from "./screens/SettingsProfile";
 import { SettingsGuideScreen } from "./screens/SettingsGuide";
+import { AnnouncementsScreen } from "./screens/Announcements";
 import { AdminDashboard } from "./screens/AdminDashboard";
 import { LoginScreen } from "./screens/Login";
 import { AuthProvider, useAuth } from "./lib/AuthContext";
@@ -25,6 +26,7 @@ export type Route =
   | { screen: "settings-display" }
   | { screen: "settings-profile" }
   | { screen: "settings-guide" }
+  | { screen: "announcements" }
   | { screen: "admin" };
 
 type Tab = "tours" | "waivers" | "settings";
@@ -43,6 +45,7 @@ function getTabFromRoute(route: Route): Tab {
     case "settings-display":
     case "settings-profile":
     case "settings-guide":
+    case "announcements":
     case "admin":
       return "settings";
   }
@@ -98,6 +101,8 @@ function MainApp() {
         return <SettingsProfileScreen navigate={navigate} />;
       case "settings-guide":
         return <SettingsGuideScreen navigate={navigate} />;
+      case "announcements":
+        return <AnnouncementsScreen key={refreshKey} navigate={navigate} />;
       case "admin":
         return <AdminDashboard key={refreshKey} navigate={navigate} />;
     }
