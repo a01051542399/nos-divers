@@ -322,11 +322,81 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 관리자 비밀번호 확인 (전역 설정)
+-- 관리자 비밀번호 (해시 저장)
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+CREATE TABLE IF NOT EXISTS admin_config (
+  id INT PRIMARY KEY DEFAULT 1,
+  password_hash TEXT NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  CONSTRAINT admin_config_single_row CHECK (id = 1)
+);
+ALTER TABLE admin_config ENABLE ROW LEVEL SECURITY;
+-- 정책 없음 → SECURITY DEFINER RPC 외에는 접근 불가
+
+INSERT INTO admin_config (id, password_hash)
+VALUES (1, crypt('0303', gen_salt('bf', 10)))
+ON CONFLICT (id) DO NOTHING;
+
 CREATE OR REPLACE FUNCTION verify_admin_password(p_password TEXT)
 RETURNS BOOLEAN AS $$
-  SELECT p_password = '0303';
-$$ LANGUAGE sql SECURITY DEFINER;
+DECLARE
+  v_hash TEXT;
+BEGIN
+  SELECT password_hash INTO v_hash FROM admin_config WHERE id = 1;
+  IF v_hash IS NULL THEN RETURN FALSE; END IF;
+  RETURN crypt(p_password, v_hash) = v_hash;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+
+CREATE OR REPLACE FUNCTION change_admin_password(p_old TEXT, p_new TEXT)
+RETURNS BOOLEAN AS $$
+DECLARE
+  v_hash TEXT;
+BEGIN
+  SELECT password_hash INTO v_hash FROM admin_config WHERE id = 1;
+  IF v_hash IS NULL OR crypt(p_old, v_hash) <> v_hash THEN RETURN FALSE; END IF;
+  UPDATE admin_config
+     SET password_hash = crypt(p_new, gen_salt('bf', 10)), updated_at = now()
+   WHERE id = 1;
+  RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 투어 + 참여자 + 비용 일괄 조회 (N+1 해결)
+CREATE OR REPLACE FUNCTION get_tours_with_details(p_include_deleted BOOLEAN DEFAULT FALSE)
+RETURNS JSONB AS $$
+DECLARE
+  v_result JSONB;
+BEGIN
+  SELECT COALESCE(jsonb_agg(t.tour_data ORDER BY t.created_at DESC), '[]'::jsonb)
+    INTO v_result
+  FROM (
+    SELECT
+      tours.created_at,
+      jsonb_build_object(
+        'tour', to_jsonb(tours),
+        'participants', COALESCE(
+          (SELECT jsonb_agg(to_jsonb(p) ORDER BY p.id)
+             FROM participants p WHERE p.tour_id = tours.id),
+          '[]'::jsonb),
+        'expenses', COALESCE(
+          (SELECT jsonb_agg(to_jsonb(e) ORDER BY e.id)
+             FROM expenses e WHERE e.tour_id = tours.id),
+          '[]'::jsonb)
+      ) AS tour_data
+    FROM tours
+    WHERE
+      (p_include_deleted OR tours.deleted_at IS NULL)
+      AND (NOT p_include_deleted OR tours.deleted_at IS NOT NULL)
+      AND EXISTS (
+        SELECT 1 FROM tour_members
+        WHERE tour_id = tours.id AND user_id = auth.uid()
+      )
+  ) t;
+  RETURN v_result;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 
 
 -- ============================================================
@@ -360,18 +430,40 @@ INSERT INTO storage.buckets (id, name, public)
 VALUES ('images', 'images', false)
 ON CONFLICT (id) DO NOTHING;
 
--- Storage RLS: 로그인 사용자만 업로드/조회
+-- Storage RLS: 경로(receipts|signatures)/{tourId}/{file} 의 tour_members 만 접근
+CREATE OR REPLACE FUNCTION storage_image_member(_name TEXT)
+RETURNS BOOLEAN AS $$
+DECLARE
+  v_parts TEXT[];
+  v_tour_id INT;
+BEGIN
+  IF auth.uid() IS NULL THEN RETURN FALSE; END IF;
+  v_parts := string_to_array(_name, '/');
+  IF array_length(v_parts, 1) < 2 THEN RETURN FALSE; END IF;
+  IF v_parts[1] NOT IN ('receipts', 'signatures') THEN RETURN FALSE; END IF;
+  BEGIN
+    v_tour_id := v_parts[2]::INT;
+  EXCEPTION WHEN OTHERS THEN
+    RETURN FALSE;
+  END;
+  RETURN EXISTS (
+    SELECT 1 FROM tour_members
+    WHERE tour_id = v_tour_id AND user_id = auth.uid()
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+
 CREATE POLICY "images_insert" ON storage.objects FOR INSERT
-  WITH CHECK (bucket_id = 'images' AND auth.uid() IS NOT NULL);
+  WITH CHECK (bucket_id = 'images' AND storage_image_member(name));
 
 CREATE POLICY "images_select" ON storage.objects FOR SELECT
-  USING (bucket_id = 'images' AND auth.uid() IS NOT NULL);
+  USING (bucket_id = 'images' AND storage_image_member(name));
 
 CREATE POLICY "images_update" ON storage.objects FOR UPDATE
-  USING (bucket_id = 'images' AND auth.uid() IS NOT NULL);
+  USING (bucket_id = 'images' AND storage_image_member(name));
 
 CREATE POLICY "images_delete" ON storage.objects FOR DELETE
-  USING (bucket_id = 'images' AND auth.uid() IS NOT NULL);
+  USING (bucket_id = 'images' AND storage_image_member(name));
 
 
 -- ============================================================

@@ -64,14 +64,15 @@ export function SettingsScreen({ navigate }: Props) {
     toast("투어가 다시 표시됩니다", "success");
   };
 
-  const handleHiddenAccess = () => {
+  const handleHiddenAccess = async () => {
     if (!accountPassword) {
       toast("계정 비밀번호를 먼저 설정해주세요", "warning");
       setShowPwPrompt(false);
       setShowPwSetup(true);
       return;
     }
-    if (pwInput === accountPassword) {
+    const ok = await db.verifyAccountPassword(pwInput);
+    if (ok) {
       setShowHidden(true);
       setShowPwPrompt(false);
       setPwInput("");
@@ -91,7 +92,8 @@ export function SettingsScreen({ navigate }: Props) {
       return;
     }
     await db.setAccountPassword(newPw);
-    setAccountPasswordState(newPw);
+    // 화면 상태에는 "설정됨" 플래그 용도로만 보관 (실제 비교는 verifyAccountPassword 사용)
+    setAccountPasswordState("__set__");
     setShowPwSetup(false);
     setNewPw("");
     setConfirmPw("");
@@ -152,15 +154,15 @@ export function SettingsScreen({ navigate }: Props) {
           <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 12 }}>
             <img
               src="/logo-dolphin-official.png"
-              alt="NoS Divers"
+              alt="Dive ON"
               style={{ width: 52, height: 52, borderRadius: 26, objectFit: "cover" }}
             />
             <div>
               <div style={{ fontSize: 18, fontWeight: 700, color: "var(--foreground)" }}>
-                NoS Divers
+                Dive ON
               </div>
               <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 1 }}>
-                SINCE 2019 DIVING TEAM
+                KEEP CALM AND DIVE ON
               </div>
             </div>
           </div>
@@ -321,7 +323,7 @@ export function SettingsScreen({ navigate }: Props) {
           </div>
           <div className="settings-row" style={{ borderBottom: "none" }}>
             <span className="label">개발</span>
-            <span className="value">NOS DIVERS</span>
+            <span className="value">Dive ON</span>
           </div>
         </div>
 

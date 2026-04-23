@@ -7,8 +7,22 @@ import type {
   Tour, Participant, Expense, Waiver, Comment,
   WaiverPersonalInfo,
 } from "../types";
+import { hashPin, verifyPin, isLegacyPlain } from "./pin-crypto";
 
 // ─── Helpers ───
+
+/** crypto.randomUUID 폴백 (구형 환경 대응) */
+function safeUUID(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  // RFC4122 v4 폴백
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
 
 /** base64 data URL → Supabase Storage upload → signed URL */
 async function uploadImage(
@@ -121,18 +135,44 @@ async function assembleTour(tourRow: any): Promise<Tour> {
 
 // ─── Tour Operations ───
 
-export async function listTours(): Promise<Tour[]> {
-  const { data, error } = await supabase
-    .from("tours")
-    .select("*")
-    .is("deleted_at", null)
-    .order("created_at", { ascending: false });
-  if (error) throw error;
-  if (!data || data.length === 0) return [];
+/** RPC 결과 row(tour|participants|expenses jsonb) → Tour 도메인 객체 */
+function fromRpcRow(row: any): Tour {
+  const t = row.tour;
+  return {
+    id: t.id,
+    name: t.name,
+    date: t.date || "",
+    location: t.location || "",
+    inviteCode: t.invite_code,
+    accessCode: t.access_code,
+    createdBy: t.created_by_name || "",
+    participants: (row.participants || []).map(toParticipant),
+    expenses: (row.expenses || []).map(toExpense),
+    createdAt: t.created_at,
+    updatedAt: t.updated_at,
+    deletedAt: t.deleted_at ?? undefined,
+  };
+}
 
-  // Assemble each tour with participants/expenses
-  const tours = await Promise.all(data.map(assembleTour));
-  return tours;
+export async function listTours(): Promise<Tour[]> {
+  // 단일 RPC 호출 — N+1 제거 (이전: tours + per-tour participants/expenses)
+  const { data, error } = await supabase.rpc("get_tours_with_details", {
+    p_include_deleted: false,
+  });
+  if (error) {
+    // RPC 미배포 환경 폴백
+    console.warn("get_tours_with_details RPC 실패, 폴백 사용:", error.message);
+    const { data: rows, error: e2 } = await supabase
+      .from("tours")
+      .select("*")
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false });
+    if (e2) throw e2;
+    if (!rows || rows.length === 0) return [];
+    return Promise.all(rows.map(assembleTour));
+  }
+  if (!data || !Array.isArray(data)) return [];
+  return data.map(fromRpcRow);
 }
 
 export async function getTourById(id: number): Promise<Tour | undefined> {
@@ -385,10 +425,9 @@ export async function addExpense(input: {
 }): Promise<Expense> {
   let receiptUrl: string | undefined;
   if (input.receiptImage && input.receiptImage.startsWith("data:")) {
-    // Upload receipt to Storage
-    const tempId = Date.now();
+    // 충돌 방지: UUID 기반 파일명 (동일 tourId 동시 업로드 시에도 안전)
     receiptUrl = await uploadImage(
-      `receipts/${input.tourId}/${tempId}.jpg`,
+      `receipts/${input.tourId}/${safeUUID()}.jpg`,
       input.receiptImage,
     );
   }
@@ -444,8 +483,10 @@ export async function editExpense(
   // Handle receipt image upload
   if (updates.receiptImage !== undefined) {
     if (updates.receiptImage && updates.receiptImage.startsWith("data:")) {
+      // expenseId 기반 고정 경로는 동일 expense 의 영수증 교체에 안전(upsert).
+      // 단 충돌 방지를 위해 UUID 기반으로 신규 업로드 후 기존 파일은 자연 만료.
       payload.receipt_url = await uploadImage(
-        `receipts/${tourId}/${expenseId}.jpg`,
+        `receipts/${tourId}/${expenseId}-${safeUUID()}.jpg`,
         updates.receiptImage,
       );
     } else {
@@ -484,9 +525,8 @@ export async function createWaiver(input: {
 }): Promise<Waiver> {
   let signatureUrl = "";
   if (input.signatureImage && input.signatureImage.startsWith("data:")) {
-    const tempId = Date.now();
     signatureUrl = await uploadImage(
-      `signatures/${input.tourId}/${tempId}.png`,
+      `signatures/${input.tourId}/${safeUUID()}.png`,
       input.signatureImage,
     );
   }
@@ -666,22 +706,59 @@ export async function setAccountPassword(password: string): Promise<void> {
   const user = (await supabase.auth.getUser()).data.user;
   if (!user) return;
   const current = await getAppSettings();
+  // 평문이 DB 에 저장되지 않도록 항상 해시 (PBKDF2 + per-PIN salt)
+  const hashed = await hashPin(password);
   await supabase.from("app_settings").upsert({
     user_id: user.id,
-    account_password: password,
+    account_password: hashed,
     hidden_tour_ids: current.hiddenTourIds,
   });
+}
+
+/**
+ * 계정 PIN 검증. 레거시 평문이 일치하면 자동으로 해시본으로 재저장하여
+ * 한 번 검증된 사용자는 즉시 안전한 형식으로 마이그레이션된다.
+ */
+export async function verifyAccountPassword(input: string): Promise<boolean> {
+  const settings = await getAppSettings();
+  const stored = settings.accountPassword;
+  if (!stored) return false;
+  const ok = await verifyPin(input, stored);
+  if (ok && isLegacyPlain(stored)) {
+    try {
+      await setAccountPassword(input);
+    } catch {
+      // 재저장 실패는 검증 결과에 영향 없음
+    }
+  }
+  return ok;
 }
 
 export async function setHiddenTourIds(ids: number[]): Promise<void> {
   const user = (await supabase.auth.getUser()).data.user;
   if (!user) return;
-  const current = await getAppSettings();
-  await supabase.from("app_settings").upsert({
-    user_id: user.id,
-    account_password: current.accountPassword,
-    hidden_tour_ids: ids,
-  });
+  // account_password 는 건드리지 않고 hidden_tour_ids 만 부분 업데이트
+  // (전체 upsert 시 기존 해시를 덮어쓸 위험을 피함)
+  const { data: existing } = await supabase
+    .from("app_settings")
+    .select("user_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (existing) {
+    const { error } = await supabase
+      .from("app_settings")
+      .update({ hidden_tour_ids: ids })
+      .eq("user_id", user.id);
+    if (error) throw error;
+  } else {
+    const { error } = await supabase.from("app_settings").insert({
+      user_id: user.id,
+      account_password: null,
+      hidden_tour_ids: ids,
+    });
+    if (error) throw error;
+  }
 }
 
 export async function verifyAdminPassword(pw: string): Promise<boolean> {

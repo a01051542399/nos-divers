@@ -30,3 +30,6 @@ frames2/
 !nos-divers-v45/assets/**/*.png
 !nos-divers-web/ios/App/App/Assets.xcassets/**/*.png
 !nos-divers-rn/assets/*.png
+!nos-divers-web/android/app/src/main/res/mipmap-*/*.png
+!nos-divers-web/resources/*.png
+!DIVE ON LOGO/*.png

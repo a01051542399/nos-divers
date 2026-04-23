@@ -12,6 +12,15 @@ export interface UserProfile {
   emergencyContact?: string;
 }
 
+/**
+ * 정산 계산.
+ *
+ * 부동소수점 누적 오차 방지를 위해 모든 잔액을 "정수 원" 단위로 다룬다.
+ * - amount * rate 는 한 번에 곱한 뒤 즉시 round → 비용별 KRW 정수 확정
+ * - 균등 분배의 1원 미만 끝수는 분배 인원에게 라운드-로빈으로 추가 부여하여
+ *   sum(부담) === amountKRW 가 항상 성립하도록 한다 (총합 보존).
+ * - 그리디 매칭 시 마지막 step 에서 잔액이 1원 미만이면 강제 흡수.
+ */
 export function calculateSettlement(tour: Tour): Settlement[] {
   const { participants, expenses } = tour;
   if (participants.length === 0 || expenses.length === 0) return [];
@@ -23,27 +32,30 @@ export function calculateSettlement(tour: Tour): Settlement[] {
 
   for (const expense of expenses) {
     const rate = expense.exchangeRate || 1;
-    const amountKRW = expense.amount * rate;
+    const amountKRW = Math.round(expense.amount * rate);
 
     if (balances[expense.paidBy] !== undefined) {
       balances[expense.paidBy] += amountKRW;
     }
 
     if (expense.splitType === "custom" && expense.splitAmounts) {
+      // 커스텀: 사용자가 입력한 금액을 그대로 환산하여 정수화
       for (const [pid, amount] of Object.entries(expense.splitAmounts)) {
         const id = Number(pid);
         if (balances[id] !== undefined) {
-          balances[id] -= amount * rate;
+          balances[id] -= Math.round(amount * rate);
         }
       }
     } else {
-      const splitCount = expense.splitAmong.length;
+      const splitIds = expense.splitAmong.filter((id) => balances[id] !== undefined);
+      const splitCount = splitIds.length;
       if (splitCount === 0) continue;
-      const perPerson = amountKRW / splitCount;
-      for (const pid of expense.splitAmong) {
-        if (balances[pid] !== undefined) {
-          balances[pid] -= perPerson;
-        }
+      const base = Math.floor(amountKRW / splitCount);
+      let remainder = amountKRW - base * splitCount; // 0 ~ splitCount-1
+      for (const pid of splitIds) {
+        const share = base + (remainder > 0 ? 1 : 0);
+        if (remainder > 0) remainder--;
+        balances[pid] -= share;
       }
     }
   }
@@ -53,9 +65,10 @@ export function calculateSettlement(tour: Tour): Settlement[] {
 
   for (const p of participants) {
     const balance = balances[p.id] || 0;
-    if (balance > 0.01) {
+    // 모든 값이 정수이므로 1원 단위에서 분류
+    if (balance >= 1) {
       creditors.push({ id: p.id, name: p.name, amount: balance });
-    } else if (balance < -0.01) {
+    } else if (balance <= -1) {
       debtors.push({ id: p.id, name: p.name, amount: -balance });
     }
   }
@@ -69,19 +82,19 @@ export function calculateSettlement(tour: Tour): Settlement[] {
 
   while (ci < creditors.length && di < debtors.length) {
     const amount = Math.min(creditors[ci].amount, debtors[di].amount);
-    if (amount > 0.01) {
+    if (amount >= 1) {
       settlements.push({
         from: debtors[di].id,
         fromName: debtors[di].name,
         to: creditors[ci].id,
         toName: creditors[ci].name,
-        amount: Math.round(amount),
+        amount,
       });
     }
     creditors[ci].amount -= amount;
     debtors[di].amount -= amount;
-    if (creditors[ci].amount < 0.01) ci++;
-    if (debtors[di].amount < 0.01) di++;
+    if (creditors[ci].amount < 1) ci++;
+    if (debtors[di].amount < 1) di++;
   }
 
   return settlements;

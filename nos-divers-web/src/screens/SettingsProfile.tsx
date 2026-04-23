@@ -71,8 +71,9 @@ export function SettingsProfileScreen({ navigate }: Props) {
     }
   };
 
-  const handlePwVerify = () => {
-    if (pwInput === accountPassword) {
+  const handlePwVerify = async () => {
+    const ok = await db.verifyAccountPassword(pwInput);
+    if (ok) {
       setShowPwPrompt(false);
       setProfileForm({ ...profile });
       setShowProfileEdit(true);

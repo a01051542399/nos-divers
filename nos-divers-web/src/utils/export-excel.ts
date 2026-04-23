@@ -278,7 +278,7 @@ export async function exportSettlementExcel(tour: Tour, settlements: Settlement[
   }
 
   // Download
-  const fileName = `NoS_Divers_정산서_${tour.name}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+  const fileName = `DiveON_정산서_${tour.name}_${new Date().toISOString().slice(0, 10)}.xlsx`;
   if (isNative()) {
     const base64 = XLSX.write(wb, { type: "base64", bookType: "xlsx" });
     await saveFile(fileName, base64, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");

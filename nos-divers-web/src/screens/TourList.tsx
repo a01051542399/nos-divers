@@ -92,7 +92,7 @@ export function TourListScreen({ navigate }: Props) {
         <div className="logo-header">
           <img
             src="/logo-full-official.png"
-            alt="NoS Divers"
+            alt="Dive ON"
             className="logo-img"
             style={{
               filter: isDark

@@ -84,7 +84,7 @@ export async function exportSettlementPDF(tour: Tour, settlements: Settlement[])
   const html = `<!DOCTYPE html>
 <html><head>
 <meta charset="utf-8">
-<title>NoS Divers 정산서 - ${tour.name}</title>
+<title>Dive ON 정산서 - ${tour.name}</title>
 <style>
   @page { size: ${isLandscape ? "landscape" : "portrait"}; margin: 10mm; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -147,7 +147,7 @@ export async function exportSettlementPDF(tour: Tour, settlements: Settlement[])
 </style>
 </head><body>
 
-<h1>NoS Divers 정산서</h1>
+<h1>Dive ON 정산서</h1>
 <div class="subtitle">${tour.name}</div>
 <div class="meta">
   📅 ${tour.date || "미정"} &nbsp; 📍 ${tour.location || "미정"} &nbsp; 👤 ${tour.participants.length}명
@@ -216,7 +216,7 @@ ${settlements.length === 0 ? "<p>정산할 내역이 없습니다</p>" :
 </table>
 
 <div class="footer">
-  NoS Divers - SINCE 2019 DIVING TEAM<br>
+  Dive ON - KEEP CALM AND DIVE ON<br>
   생성일시: ${new Date().toLocaleString("ko-KR")}
 </div>
 </body></html>`;

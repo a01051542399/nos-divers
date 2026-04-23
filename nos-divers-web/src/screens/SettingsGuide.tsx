@@ -51,7 +51,7 @@ const sections = [
   },
   {
     title: "참고사항",
-    body: `모든 데이터는 서버에 안전하게 저장됩니다.\n로그인하면 어떤 기기에서든 동일한 데이터를 확인할 수 있습니다.\n문의사항은 NoS Divers 운영진에게 연락해주세요.`,
+    body: `모든 데이터는 서버에 안전하게 저장됩니다.\n로그인하면 어떤 기기에서든 동일한 데이터를 확인할 수 있습니다.\n문의사항은 Dive ON 운영진에게 연락해주세요.`,
   },
 ];
 
@@ -74,7 +74,7 @@ export function SettingsGuideScreen({ navigate }: Props) {
       <div className="p-16" style={{ paddingTop: 0 }}>
         <div className="card" style={{ padding: "20px 18px" }}>
           <div style={{ fontSize: 17, fontWeight: 700, color: "var(--foreground)", marginBottom: 4 }}>
-            NoS Divers 사용안내서
+            Dive ON 사용안내서
           </div>
           <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 20 }}>
             다이빙 투어 정산 & 면책동의서 관리

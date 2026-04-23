@@ -136,7 +136,7 @@ export function LoginScreen() {
       {/* Logo */}
       <img
         src={isDark ? "/logo-full.png" : "/logo-full-official.png"}
-        alt="NoS Divers"
+        alt="Dive ON"
         style={{
           width: 160, height: "auto", marginBottom: 20,
           filter: isDark
@@ -167,7 +167,7 @@ export function LoginScreen() {
       </h1>
       <p style={{ fontSize: 14, color: "var(--muted)", margin: "0 0 28px" }}>
         {mode === "login"
-          ? "NOS Divers에 오신 것을 환영합니다"
+          ? "Dive ON에 오신 것을 환영합니다"
           : mode === "signup"
           ? "새 계정을 만들어보세요"
           : "가입하신 이메일을 입력해주세요"}

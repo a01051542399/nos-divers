@@ -367,10 +367,10 @@ export function TourDetailScreen({ tourId, navigate }: Props) {
           <button
             className="tour-header-chip"
             onClick={async () => {
-              const text = `🤿 NoS Divers 다이빙 투어 초대!\n\n투어: ${tour.name}\n날짜: ${tour.date || "미정"}\n장소: ${tour.location || "미정"}\n\n초대 코드: ${tour.inviteCode}\n\n앱에서 초대 코드를 입력하여 참여하세요!`;
+              const text = `🤿 Dive ON 다이빙 투어 초대!\n\n투어: ${tour.name}\n날짜: ${tour.date || "미정"}\n장소: ${tour.location || "미정"}\n\n초대 코드: ${tour.inviteCode}\n\n앱에서 초대 코드를 입력하여 참여하세요!`;
               try {
                 if (navigator.share) {
-                  await navigator.share({ title: `NoS Divers - ${tour.name}`, text });
+                  await navigator.share({ title: `Dive ON - ${tour.name}`, text });
                   return;
                 }
               } catch {}
