@@ -5,7 +5,7 @@ Dive ON 로고 일괄 생성기.
 대상: PWA, web 화면, iOS AppIcon, Android mipmap_*launcher
 """
 
-from PIL import Image
+from PIL import Image, ImageDraw
 import os
 import shutil
 
@@ -23,6 +23,31 @@ side = min(w, h)
 left = (w - side) // 2
 top = (h - side) // 2
 square = src.crop((left, top, left + side, top + side))
+
+
+def make_transparent_circle(img: Image.Image) -> Image.Image:
+    """
+    원형 외곽의 흰 배경을 투명 처리.
+    내부 흰색 텍스트는 보존되도록 원 마스크만 적용.
+    """
+    size = img.size[0]  # 정사각형 가정
+    # 원형 마스크: 정확한 안티앨리어싱을 위해 4배 해상도로 그린 뒤 다운샘플
+    scale = 4
+    big = Image.new("L", (size * scale, size * scale), 0)
+    ImageDraw.Draw(big).ellipse(
+        (0, 0, size * scale - 1, size * scale - 1),
+        fill=255,
+    )
+    mask = big.resize((size, size), Image.LANCZOS)
+
+    out = img.copy()
+    out.putalpha(mask)
+    return out
+
+
+# 모든 출력에 사용할 투명 원형 로고
+square = make_transparent_circle(square)
+print("background: 원형 외곽 투명 처리 완료")
 
 
 def save_png(img, path, size):
