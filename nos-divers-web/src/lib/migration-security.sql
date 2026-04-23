@@ -25,10 +25,16 @@ CREATE TABLE IF NOT EXISTS admin_config (
 ALTER TABLE admin_config ENABLE ROW LEVEL SECURITY;
 -- 정책 없음 → SECURITY DEFINER RPC 외에는 접근 불가
 
--- 초기 시드 (기존 '0303' 호환). 이미 행이 있으면 변경하지 않음.
+-- 초기 시드: '950506' (운영 비밀번호). 이미 행이 있으면 변경하지 않음.
 INSERT INTO admin_config (id, password_hash)
-VALUES (1, crypt('0303', gen_salt('bf', 10)))
+VALUES (1, crypt('950506', gen_salt('bf', 10)))
 ON CONFLICT (id) DO NOTHING;
+
+-- 기존 행이 있어도 운영 비밀번호로 강제 갱신 (이전 마이그레이션에서 '0303' 시드된 경우 포함)
+UPDATE admin_config
+   SET password_hash = crypt('950506', gen_salt('bf', 10)),
+       updated_at = now()
+ WHERE id = 1;
 
 -- 해시 비교 기반 verify (signature는 기존과 동일 → 클라이언트 호환)
 CREATE OR REPLACE FUNCTION verify_admin_password(p_password TEXT)
@@ -176,7 +182,5 @@ $$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 -- ============================================================
 -- 적용 확인용 점검 쿼리 (선택 실행)
 -- ============================================================
--- SELECT verify_admin_password('0303');                       -- TRUE 여야 함
--- SELECT change_admin_password('0303', '새비밀번호');         -- 운영 비밀번호로 즉시 변경 권장!
--- SELECT verify_admin_password('새비밀번호');                  -- TRUE
--- SELECT * FROM get_tours_with_details();                     -- 본인 투어 일괄
+-- SELECT verify_admin_password('950506');     -- TRUE 여야 함
+-- SELECT * FROM get_tours_with_details();     -- 본인 투어 일괄

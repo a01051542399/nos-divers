@@ -335,7 +335,7 @@ ALTER TABLE admin_config ENABLE ROW LEVEL SECURITY;
 -- 정책 없음 → SECURITY DEFINER RPC 외에는 접근 불가
 
 INSERT INTO admin_config (id, password_hash)
-VALUES (1, crypt('0303', gen_salt('bf', 10)))
+VALUES (1, crypt('950506', gen_salt('bf', 10)))
 ON CONFLICT (id) DO NOTHING;
 
 CREATE OR REPLACE FUNCTION verify_admin_password(p_password TEXT)
