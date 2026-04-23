@@ -1,4 +1,4 @@
-package com.nosdivers.app;
+package com.diveon.app;
 
 import com.getcapacitor.BridgeActivity;
 

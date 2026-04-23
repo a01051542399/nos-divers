@@ -92,14 +92,9 @@ export function TourListScreen({ navigate }: Props) {
         {/* Logo */}
         <div className="logo-header">
           <img
-            src="/logo-full-official.png"
+            src={isDark ? "/logo-full.png" : "/logo-full-official.png"}
             alt="Dive ON"
             className="logo-img"
-            style={{
-              filter: isDark
-                ? "drop-shadow(0 0 1px rgba(255,255,255,0.6))"
-                : "drop-shadow(0 0 1px rgba(0,0,0,0.15))",
-            }}
           />
         </div>
 

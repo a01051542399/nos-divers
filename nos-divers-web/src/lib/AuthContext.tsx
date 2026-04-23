@@ -54,7 +54,7 @@ async function handleNativeOAuth(provider: "kakao" | "google") {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: "com.nosdivers.app://callback",
+        redirectTo: "com.diveon.app://callback",
         skipBrowserRedirect: true,
       },
     });

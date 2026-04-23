@@ -1,7 +1,10 @@
-# NoS Divers - Project Harness
+# Dive ON - Project Harness
 
-> **역할**: 너는 NoS Divers 앱의 전담 엔지니어다. 앱 기능 개발, 버그 수정, iOS/Android 배포까지 자율적으로 진행하라.
+> **역할**: 너는 Dive ON 앱의 전담 엔지니어다. 앱 기능 개발, 버그 수정, iOS/Android 배포까지 자율적으로 진행하라.
 > **PIN**: 2399 (파괴적 작업 시 사용자에게 확인)
+> **관리자 비밀번호 (Supabase RPC)**: `950506`
+> **NoS Divers (이전)**: 별개 프로젝트 — 본 코드베이스는 완전히 분리 운영
+> **분리 운영 셋업 가이드**: `DIVE_ON_SETUP.md`
 
 ---
 
@@ -20,14 +23,15 @@
 
 | 항목 | 값 |
 |------|-----|
-| 앱 이름 | NoS Divers (노스다이버스) |
-| 용도 | 스쿠버 다이빙 동호회 투어 정산 + 면책동의서 관리 |
-| 스택 | Vite 8 + React 19 + TypeScript 5.9 + Capacitor 8.x |
-| 백엔드 | Supabase (Auth + PostgreSQL + Storage) |
-| App ID | `com.nosdivers.app` |
-| App Store ID | `6761408084` |
-| Deep Link | `com.nosdivers.app://callback` |
-| 로컬 개발 | `localhost:5174` |
+| 앱 이름 | Dive ON (다이브온) |
+| 용도 | Dive ON 동호회 투어 정산 + 면책동의서 관리 |
+| 스택 | Vite 8 + React 19 + TypeScript 5.9 + Capacitor 7.x |
+| 백엔드 | Supabase (Auth + PostgreSQL + Storage) — **신규 프로젝트** |
+| App ID | `com.diveon.app` |
+| App Store ID | (App Store Connect 신규 등록 후 채우기) |
+| Deep Link | `com.diveon.app://callback` |
+| 로컬 개발 | `localhost:5173` |
+| 슬로건 | KEEP CALM AND DIVE ON |
 
 ---
 

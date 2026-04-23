@@ -137,12 +137,7 @@ export function LoginScreen() {
       <img
         src={isDark ? "/logo-full.png" : "/logo-full-official.png"}
         alt="Dive ON"
-        style={{
-          width: 160, height: "auto", marginBottom: 20,
-          filter: isDark
-            ? "drop-shadow(0 0 1px rgba(255,255,255,0.6))"
-            : "none",
-        }}
+        style={{ width: 160, height: "auto", marginBottom: 20 }}
         onError={(e) => { (e.target as HTMLImageElement).src = "/logo-dolphin-official.png"; }}
       />
 

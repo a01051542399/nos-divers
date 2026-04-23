@@ -1,14 +1,13 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.nosdivers.app',
-  appName: 'NoS Divers',
+  appId: 'com.diveon.app',
+  appName: 'Dive ON',
   webDir: 'dist',
   server: {
     androidScheme: 'https',
     allowNavigation: [
       '*.supabase.co',
-      'eomxrrepgstamhidsvlj.supabase.co',
       '*.kakao.com',
       'kauth.kakao.com',
       'accounts.kakao.com',

@@ -18,12 +18,12 @@
     const hash = window.location.hash.substring(1);
     if (hash) {
       // Redirect to app with tokens
-      window.location.href = "com.nosdivers.app://callback#" + hash;
+      window.location.href = "com.diveon.app://callback#" + hash;
     } else {
       // No hash, try query params (some providers use code flow)
       const params = window.location.search;
       if (params) {
-        window.location.href = "com.nosdivers.app://callback" + params;
+        window.location.href = "com.diveon.app://callback" + params;
       } else {
         document.querySelector('.msg').innerHTML = '<p>로그인 완료. 앱으로 돌아가주세요.</p>';
       }

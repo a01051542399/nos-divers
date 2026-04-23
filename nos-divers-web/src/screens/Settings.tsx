@@ -155,7 +155,9 @@ export function SettingsScreen({ navigate }: Props) {
         <div className="card" style={{ padding: 20 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 12 }}>
             <img
-              src="/logo-dolphin-official.png"
+              src={currentTheme === "dark" || (currentTheme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches)
+                ? "/logo-dolphin.png"
+                : "/logo-dolphin-official.png"}
               alt="Dive ON"
               style={{ width: 52, height: 52, borderRadius: 26, objectFit: "cover" }}
             />

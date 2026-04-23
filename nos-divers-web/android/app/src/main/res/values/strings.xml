@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">NoS Divers</string>
-    <string name="title_activity_main">NoS Divers</string>
-    <string name="package_name">com.nosdivers.app</string>
-    <string name="custom_url_scheme">com.nosdivers.app</string>
+    <string name="app_name">Dive ON</string>
+    <string name="title_activity_main">Dive ON</string>
+    <string name="package_name">com.diveon.app</string>
+    <string name="custom_url_scheme">com.diveon.app</string>
 </resources>
