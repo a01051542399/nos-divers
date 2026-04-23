@@ -97,8 +97,8 @@ export function TourListScreen({ navigate }: Props) {
             className="logo-img"
             style={{
               filter: isDark
-                ? "drop-shadow(0 0 1px rgba(255,255,255,0.9)) drop-shadow(0 0 2px rgba(255,255,255,0.5)) drop-shadow(0 0 4px rgba(255,255,255,0.3))"
-                : "drop-shadow(0 0 1px rgba(0,0,0,0.15)) drop-shadow(0 0 3px rgba(0,0,0,0.1))",
+                ? "drop-shadow(0 0 1px rgba(255,255,255,0.6))"
+                : "drop-shadow(0 0 1px rgba(0,0,0,0.15))",
             }}
           />
         </div>

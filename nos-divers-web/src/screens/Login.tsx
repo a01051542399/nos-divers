@@ -140,7 +140,7 @@ export function LoginScreen() {
         style={{
           width: 160, height: "auto", marginBottom: 20,
           filter: isDark
-            ? "drop-shadow(0 0 2px rgba(255,255,255,0.9)) drop-shadow(0 0 4px rgba(255,255,255,0.6)) drop-shadow(0 0 6px rgba(255,255,255,0.3))"
+            ? "drop-shadow(0 0 1px rgba(255,255,255,0.6))"
             : "none",
         }}
         onError={(e) => { (e.target as HTMLImageElement).src = "/logo-dolphin-official.png"; }}
