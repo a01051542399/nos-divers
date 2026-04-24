@@ -7,6 +7,7 @@ import * as db from "../lib/supabase-store";
 import type { UserProfile } from "../lib/supabase-store";
 import {
   WAIVER_TITLE,
+  WAIVER_SUBTITLE,
   WAIVER_INTRO,
   WAIVER_SECTIONS,
   WAIVER_CLOSING,
@@ -377,12 +378,18 @@ export function WaiverSignScreen({ tourId, navigate }: Props) {
                 style={{
                   fontSize: 17,
                   fontWeight: 800,
-                  marginBottom: 10,
+                  marginBottom: 4,
                   textAlign: "center",
                 }}
               >
                 {WAIVER_TITLE}
               </h3>
+              <div style={{
+                fontSize: 11, color: "var(--muted)", textAlign: "center",
+                marginBottom: 12, fontWeight: 500,
+              }}>
+                {WAIVER_SUBTITLE}
+              </div>
               <p style={{ fontSize: 14, lineHeight: 1.6 }}>{WAIVER_INTRO}</p>
             </div>
 

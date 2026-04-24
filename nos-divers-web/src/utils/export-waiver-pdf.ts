@@ -1,5 +1,5 @@
 import type { Waiver, Tour } from "../types";
-import { WAIVER_TITLE, WAIVER_INTRO, WAIVER_SECTIONS, WAIVER_CLOSING, HEALTH_CHECKLIST } from "../waiver-template";
+import { WAIVER_TITLE, WAIVER_SUBTITLE, WAIVER_INTRO, WAIVER_SECTIONS, WAIVER_CLOSING, HEALTH_CHECKLIST } from "../waiver-template";
 import { isNative } from "../lib/platform";
 import { saveFile } from "./file-save";
 
@@ -24,9 +24,10 @@ function buildWaiverHTML(waiver: Waiver, tour?: Tour): string {
   return `
     <div class="waiver-page">
       <h1>${WAIVER_TITLE}</h1>
+      <div class="subtitle">${WAIVER_SUBTITLE}</div>
 
       <div class="section">
-        <h2>1. 참가 동의</h2>
+        <h2>참가 동의</h2>
         <p>${WAIVER_INTRO}</p>
       </div>
 
@@ -88,7 +89,8 @@ const CSS = `
   body { font-family: 'Malgun Gothic', '맑은 고딕', sans-serif; font-size: 11px; line-height: 1.6; color: #222; }
   .waiver-page { page-break-after: always; padding: 10px 0; }
   .waiver-page:last-child { page-break-after: auto; }
-  h1 { font-size: 18px; text-align: center; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+  h1 { font-size: 18px; text-align: center; margin-bottom: 4px; padding-bottom: 4px; }
+  .subtitle { font-size: 10px; text-align: center; color: #666; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 2px solid #333; }
   .section { margin-bottom: 12px; }
   .section h2 { font-size: 12px; font-weight: 700; margin-bottom: 4px; color: #111; }
   .section p { font-size: 10.5px; line-height: 1.5; color: #333; white-space: pre-wrap; }
