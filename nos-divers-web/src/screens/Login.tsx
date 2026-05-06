@@ -132,6 +132,7 @@ export function LoginScreen() {
       display: "flex", flexDirection: "column", alignItems: "center",
       height: "100%", padding: "48px 24px 24px", boxSizing: "border-box",
       background: "var(--background)", overflowY: "auto",
+      overscrollBehavior: "contain", WebkitOverflowScrolling: "touch",
     }}>
       {/* Logo */}
       <img
