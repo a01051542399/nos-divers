@@ -8,7 +8,8 @@ workflows:
       app_store_connect: Codemagic
     environment:
       node: 22
-      xcode: 16.2
+      # Apple 이 2026-04 이후 iOS 26 SDK 강제 (Xcode 26+ 필요)
+      xcode: latest
       groups:
         - code_signing
       vars:
