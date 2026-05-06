@@ -13,18 +13,15 @@ workflows:
         - code_signing
       vars:
         BUNDLE_ID: "com.diveon.app"
-        # ⚠️ Dive ON 새 App Store Connect 앱 등록 후 새 App ID 로 교체 필요
-        APP_STORE_CONNECT_APP_ID: "REPLACE_WITH_NEW_APP_ID"
+        APP_STORE_CONNECT_APP_ID: "6766769694"
         XCODE_SCHEME: "App"
-    # ⚠️ 자동 트리거 비활성화 — 새 App Store Connect 앱 등록 + APP_STORE_CONNECT_APP_ID
-    # 교체 완료 후 아래 triggering 블록을 주석 해제하세요.
-    # triggering:
-    #   events:
-    #     - push
-    #   branch_patterns:
-    #     - pattern: main
-    #       include: true
-    #       source: true
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+          source: true
     scripts:
       - name: Install Node dependencies
         script: |
