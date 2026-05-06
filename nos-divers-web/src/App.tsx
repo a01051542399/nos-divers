@@ -202,7 +202,7 @@ function AuthGate() {
     return (
       <div style={{
         display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-        height: "100vh", background: "var(--background)", gap: 12,
+        height: "100%", background: "var(--background)", gap: 12,
       }}>
         <div style={{ color: "var(--muted)", fontSize: 16 }}>
           {migrating ? migrationMsg || "데이터 이전 중..." : "로딩 중..."}
@@ -284,7 +284,7 @@ function ProfileSetupScreen({ onComplete }: { onComplete: () => void }) {
   return (
     <div style={{
       display: "flex", flexDirection: "column", alignItems: "center",
-      minHeight: "100vh", padding: "48px 24px 24px",
+      height: "100%", padding: "48px 24px 24px", boxSizing: "border-box",
       background: "var(--background)", overflowY: "auto",
     }}>
       <h1 style={{ fontSize: 24, fontWeight: 700, color: "var(--foreground)", margin: "0 0 6px" }}>

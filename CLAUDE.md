@@ -213,7 +213,7 @@ UserProfile { name, email, grade, phone, birthDate, divingLevel, emergencyContac
 ### OAuth 토큰 처리
 - Supabase implicit flow: `#access_token=...&refresh_token=...` (URL hash)
 - PKCE flow: `?code=...` → `exchangeCodeForSession()`
-- 딥링크: `com.nosdivers.app://callback` → `CapApp.addListener("appUrlOpen")`
+- 딥링크: `com.diveon.app://callback` → `CapApp.addListener("appUrlOpen")`
 
 ### 신규 사용자 흐름
 OAuth 로그인 → user_metadata(full_name, preferred_username) → profiles.name 동기화 → 프로필 설정 화면 (이름 필수)

@@ -42,7 +42,7 @@ export function LoginScreen() {
     return (
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "center",
-        height: "100vh", background: "var(--background)",
+        height: "100%", background: "var(--background)",
       }}>
         <div style={{ color: "var(--muted)", fontSize: 16 }}>로딩 중...</div>
       </div>
@@ -130,7 +130,7 @@ export function LoginScreen() {
   return (
     <div style={{
       display: "flex", flexDirection: "column", alignItems: "center",
-      minHeight: "100vh", padding: "48px 24px 24px",
+      height: "100%", padding: "48px 24px 24px", boxSizing: "border-box",
       background: "var(--background)", overflowY: "auto",
     }}>
       {/* Logo */}
